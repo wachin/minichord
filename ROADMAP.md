@@ -440,7 +440,7 @@ Chords MUST visually align with lyrics.
 
 ## 4.1 Native Format
 
-- [ ] Create `.mwp` format
+- [ ] Create native `.mchord` format
 - [ ] JSON-based structure
 - [ ] Embedded metadata
 - [ ] Embedded formatting
@@ -641,16 +641,18 @@ Macros must be:
 
 ---
 
-# 11. SONGBOOK / MULTI-FILE IMPORT SYSTEM
+# 11. SONGBOOK / MULTI-FILE CHORDPRO IMPORT SYSTEM
 
-miniChord must support creating complete worship songbooks from many text or ChordPro files.
+miniChord must support creating complete worship songbooks from many ChordPro files.
+Plain `.txt` chord-over-lyrics conversion is handled by a separate tool:
+https://github.com/wachin/txt-to-chordpro-converter
 
 The user may have 50, 100, or more song files. The program must allow importing all of them at once and placing them into the same document using the selected page layout.
 
-## 11.1 Multiple Text File Import
+## 11.1 Multiple ChordPro File Import
 
 - [ ] Add “Import Multiple Song Files…” action
-- [ ] Allow selecting many `.txt`, `.cho`, `.chordpro`, and `.pro` files at once
+- [ ] Allow selecting many `.cho`, `.chordpro`, and `.pro` files at once
 - [ ] Allow importing an entire folder of song files
 - [ ] Preserve original line breaks and chord alignment
 - [ ] Detect song title from the first line
@@ -713,25 +715,6 @@ After importing many ChordPro or chord-text songs, miniChord must be able to gen
 - [ ] Store song order
 - [ ] Store ChordPro directives
 - [ ] Store plain-text source when imported from non-ChordPro files
-
-## 11.5 Import Example
-
-The program must correctly import song files like:
-
-- `Este es mi deseo (A) - Claudio Freidzon.txt`
-- `Perfume a tus pies (A) - Jaz Jacob.txt`
-- `Vine a adorarte - Kayros (G).txt`
-
-Expected behavior:
-
-- [ ] Read each file
-- [ ] Detect title
-- [ ] Detect artist when possible
-- [ ] Detect key from filename
-- [ ] Preserve chords above lyrics
-- [ ] Insert songs into the current document
-- [ ] Apply the selected page size, margins, and columns
-- [ ] Include the songs in the generated index
 
 ---
 
