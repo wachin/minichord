@@ -1,0 +1,33 @@
+pyqt6-dev - development files for PyQt6
+pyqt6-dev-tools - development tools for PyQt6
+pyqt6-examples - Examples for PyQt6
+python3-dbus.mainloop.pyqt6 - D-Bus Qt main loop support for Python
+python3-pyqt6 - Python bindings for Qt 6
+python3-pyqt6.qtbluetooth - Python bindings for Qt 6 Bluetooth module
+python3-pyqt6.qtdesigner - Python bindings for Qt 6 Designer module
+python3-pyqt6.qthelp - Python bindings for Qt 6 Help module
+python3-pyqt6.qtmultimedia - Python bindings for Qt 6 Multimedia module
+python3-pyqt6.qtnfc - Python bindings for Qt 6 NFC module
+python3-pyqt6.qtpdf - Python bindings for Qt 6 PDF module
+python3-pyqt6.qtpositioning - Python bindings for Qt 6 Positioning module
+python3-pyqt6.qtqml - Python bindings for Qt 6 QML module
+python3-pyqt6.qtquick - Python bindings for Qt 6 Quick module
+python3-pyqt6.qtquick3d - Python bindings for Qt 6 Quick 3D module
+python3-pyqt6.qtremoteobjects - Python bindings for Qt 6 Remote Objects module
+python3-pyqt6.qtsensors - Python bindings for Qt 6 Sensors module
+python3-pyqt6.qtserialport - Python bindings for Qt 6 Serial Port module
+python3-pyqt6.qtsvg - Python bindings for Qt 6 SVG module
+python3-pyqt6.qttexttospeech - Python bindings for Qt 6 TextToSpeech module
+python3-pyqt6.qtwebchannel - Python bindings for Qt 6 WebChannel module
+python3-pyqt6.qtwebsockets - Python bindings for Qt 6 WebSockets module
+pyqt6-charts-dev - Development files for PyQtCharts
+python3-pyqt6.qtcharts - Python 3 bindings for Qt6's Charts module
+python3-pyqt6.sip - runtime module for Python extensions using SIP
+pyqt6-webengine-dev - Development files for PyQt6-WebEngine
+python3-pyqt6.qtwebengine - Python bindings for the Qt 6 WebEngine framework
+python3-qtpy - Abstraction layer for PySide2/PySide6/PyQt5/PyQt6 (Python 3)
+pyqt6.qsci-dev - Development files for Python Qscintilla2 (Qt6)
+python3-pyqt6.qsci - Python 3 bindings for QScintilla 2 with Qt 6
+python3-sphinx-qt-documentation - Plugin for proper resolve intersphinx references for Qt elements
+python-superqt-doc - 'missing' widgets and components for PyQt/PySide - documentation
+python3-superqt - 'missing' widgets and components for PyQt/PySide
