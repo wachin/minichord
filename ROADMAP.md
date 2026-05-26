@@ -330,9 +330,96 @@ Each section may have:
 - [ ] Layout-aware undo
 - [ ] Chord-aware undo
 
+## 2.3 Spellcheck and Thesaurus System
+
+miniChord must include a cross-platform spellcheck and thesaurus system.
+
+The system must support:
+- spell checking,
+- word suggestions,
+- synonym lookup,
+- language selection,
+- Linux system dictionaries,
+- bundled dictionaries on Windows and macOS.
+
+### Linux Dictionary Backend
+
+On Linux, miniChord should use dictionaries installed from the system repositories.
+
+Recommended Debian/MX Linux packages:
+
+- `hunspell`
+- `hunspell-es`
+- `myspell-es`
+- `mythes-es`
+
+Linux dictionary search paths:
+
+- `/usr/share/hunspell`
+- `/usr/share/myspell/dicts`
+- `/usr/share/mythes`
+
+Required Linux features:
+
+- [ ] Detect installed Hunspell dictionaries
+- [ ] Detect installed Mythes thesaurus files
+- [ ] Use `.aff` and `.dic` files for spell checking
+- [ ] Use `.dat` and `.idx` files for synonyms
+- [ ] Prefer Spanish Ecuador when available
+- [ ] Fall back to Spanish Spain or generic Spanish when needed
+- [ ] Allow choosing spellcheck language
+- [ ] Allow choosing thesaurus language
+
+### Windows and macOS Dictionary Backend
+
+On Windows and macOS, miniChord should use bundled LibreOffice dictionaries from:
+
+https://github.com/wachin/libreoffice-dictionaries-collection
+
+Required Windows/macOS features:
+
+- [ ] Support bundled Hunspell dictionaries
+- [ ] Support bundled Mythes thesaurus files
+- [ ] Search dictionaries inside the application data folder
+- [ ] Allow the user to configure an external dictionary folder
+- [ ] Support the LibreOffice dictionary folder structure
+- [ ] Support Spanish dictionaries such as `es_EC`, `es_ES`, `es_MX`, etc.
+- [ ] Support thesaurus files such as `th_es_v2.dat` and `th_es_v2.idx`
+
+### Spellcheck Features
+
+- [ ] Underline misspelled words
+- [ ] Ignore ChordPro directives
+- [ ] Ignore chord symbols such as `G`, `D/F#`, `Asus4`, `Bm7`
+- [ ] Ignore metadata fields such as `{title:}`, `{artist:}`, `{key:}`
+- [ ] Ignore section markers such as `{soc}` and `{eoc}`
+- [ ] Show suggestions in context menu
+- [ ] Replace misspelled word with suggestion
+- [ ] Ignore once
+- [ ] Add word to personal dictionary
+- [ ] Disable spellcheck per document
+- [ ] Disable spellcheck per songbook
+
+### Thesaurus Features
+
+- [ ] Show synonyms for selected word
+- [ ] Replace selected word with synonym
+- [ ] Support Mythes `.dat` and `.idx` files
+- [ ] Reuse the thesaurus logic from `chord_autoscroll.py`
+- [ ] Cache thesaurus entries for performance
+- [ ] Show thesaurus language in dialog title
+- [ ] Allow changing thesaurus language from the dialog
+
+### Personal Dictionaries
+
+- [ ] Store user-added words
+- [ ] Store ignored words
+- [ ] Support per-language personal dictionaries
+- [ ] Keep personal dictionaries in a Git-friendly text format
+
 ---
 
-## 2.3 Tables
+## 2.4 Tables
 
 - [ ] Insert table
 - [ ] Resize table
@@ -344,7 +431,7 @@ Each section may have:
 
 ---
 
-## 2.4 Images
+## 2.5 Images
 
 - [ ] Insert images
 - [ ] Resize images
