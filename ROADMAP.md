@@ -94,6 +94,56 @@ layout engine capable of professional page-oriented rendering.
 - [ ] Songbook recovery system
 - [ ] Crash recovery dialog
 
+## 0.1 Internationalization with Qt Linguist
+
+miniChord must support internationalization using Qt Linguist.
+
+The application must use:
+- Qt translation system
+- `.ts` translation source files
+- `.qm` compiled translation files
+- `QTranslator`
+- `QLocale`
+- Qt Linguist workflow
+
+### Requirements
+
+- [ ] Wrap all user-visible strings with `self.tr()` or `QCoreApplication.translate()`
+- [ ] Keep translation files under `translations/`
+- [ ] Create initial Spanish translation file: `translations/minichord_es.ts`
+- [ ] Create optional English translation file: `translations/minichord_en.ts`
+- [ ] Compile `.ts` files into `.qm` files using `lrelease`
+- [ ] Load `.qm` files at startup using `QTranslator`
+- [ ] Detect system language using `QLocale`
+- [ ] Allow manual language selection in Preferences
+- [ ] Save selected language in settings
+- [ ] Restart or reload UI after language change
+- [ ] Use `qt6-translations-l10n` for native Qt dialogs on Linux
+- [ ] Document the translation workflow in README
+
+### Qt Linguist Workflow
+
+```bash
+# Generate or update TS translation files
+pylupdate6 minichord/ -ts translations/minichord_es.ts
+
+# Open translation file in Qt Linguist
+linguist-qt6 translations/minichord_es.ts
+
+# Compile TS to QM
+lrelease translations/minichord_es.ts -qm translations/minichord_es.qm
+```
+
+### Translation File Structure
+
+```text
+translations/
+├── minichord_es.ts
+├── minichord_es.qm
+├── minichord_en.ts
+└── minichord_en.qm
+```
+
 ---
 
 # 1. DOCUMENT ENGINE (MOST IMPORTANT)
