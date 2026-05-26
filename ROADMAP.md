@@ -397,7 +397,6 @@ Each section may have:
 - [ ] Bullet lists
 - [ ] Numbered lists
 
-
 ## 2.1.1 Style System
 
 miniChord must support reusable semantic document styles.
@@ -417,6 +416,33 @@ miniChord must support reusable semantic document styles.
 - [ ] User-defined styles
 - [ ] Style import/export
 - [ ] Theme-aware styles
+
+### Print Style Profiles
+
+miniChord should support different visual profiles depending on printing needs.
+
+### Black & White Profiles
+
+- [ ] Ink-saving print profile
+- [ ] High-contrast monochrome profile
+- [ ] Optimized laser printer profile
+- [ ] Compact worship songbook profile
+- [ ] Chord readability optimization
+
+### Color Profiles
+
+- [ ] Colored chord rendering
+- [ ] Colored section headings
+- [ ] Colored song titles
+- [ ] Colored metadata
+- [ ] Theme-based songbook styles
+- [ ] User-defined color themes
+
+### Accessibility Features
+
+- [ ] High-contrast accessibility mode
+- [ ] Colorblind-friendly palettes
+- [ ] Monochrome compatibility validation
 
 ---
 
@@ -991,6 +1017,11 @@ Macros must be:
 - [ ] Preserve clickable index links in exported PDF
 - [ ] Preserve multi-column layout in exported PDF
 - [ ] Preserve headers/footers in exported PDF
+- [ ] Black-and-white print optimization
+- [ ] Ink-saving rendering mode
+- [ ] Grayscale conversion preview
+- [ ] Printer-friendly monochrome mode
+- [ ] Preserve readability without colors
 
 ---
 
