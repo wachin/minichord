@@ -374,7 +374,19 @@ Required Linux features:
 
 On Windows and macOS, miniChord should use bundled LibreOffice dictionaries from:
 
-https://github.com/wachin/libreoffice-dictionaries-collection
+```bash
+git clone https://github.com/wachin/minichord
+cd vnote.git
+git submodule update --init --recursive
+```
+
+because are using in submodules:
+
+```
+[submodule "third-party/libreoffice-dictionaries-collection"]
+	path = third-party/libreoffice-dictionaries-collection
+	url = https://github.com/wachin/libreoffice-dictionaries-collection
+```
 
 Required Windows/macOS features:
 
@@ -385,6 +397,15 @@ Required Windows/macOS features:
 - [ ] Support the LibreOffice dictionary folder structure
 - [ ] Support Spanish dictionaries such as `es_EC`, `es_ES`, `es_MX`, etc.
 - [ ] Support thesaurus files such as `th_es_v2.dat` and `th_es_v2.idx`
+
+#### Third-Party Resources
+
+- [ ] Use Git submodules for bundled dictionaries
+- [ ] Store bundled dictionaries under `third-party/`
+- [ ] Support optional external dictionary repositories
+- [ ] Detect missing submodules at startup
+- [ ] Show warning if dictionaries are not initialized
+
 
 ### Spellcheck Features
 
@@ -880,6 +901,8 @@ Macros must be:
 - [ ] Tables
 - [ ] Images
 - [ ] Styles
+- [ ] Spellcheck system
+- [ ] Thesaurus system
 
 ---
 
