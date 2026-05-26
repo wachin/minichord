@@ -486,7 +486,7 @@ cd minichord
 git submodule update --init --recursive
 ```
 
-because are using in submodules:
+because the project uses this Git submodule:
 
 ```
 [submodule "third-party/libreoffice-dictionaries-collection"]
@@ -1123,7 +1123,7 @@ The user may have 50, 100, or more song files. The program must allow importing 
 
 ## 11.3 ChordPro Song Index
 
-After importing many ChordPro or chord-text songs, miniChord must be able to generate an index/table of contents using the song titles.
+After importing many ChordPro songs, miniChord must be able to generate an index/table of contents using the song titles.
 
 - [ ] Add “Insert Song Index” feature
 - [ ] Generate index from imported song titles
@@ -1184,6 +1184,6 @@ miniChord should become:
 
 - a professional ChordPro editor,
 - a worship song book creator,
-- a real WYSIWYG page-layout editor,
+- a real WYSIWYG page-layout editor.
 
 
