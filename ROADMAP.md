@@ -42,6 +42,13 @@ Everything must be based on:
 - multi-column layout,
 - page reflow.
 
+miniChord must include a music-aware layout system capable of:
+- chord-aware pagination,
+- section-aware rendering,
+- song-aware text flow,
+- chord/lyric pairing preservation,
+- semantic music document layout.
+
 **IMPORTANT:**
 
 QTextDocument may be used as a helper component,
@@ -88,7 +95,13 @@ layout engine capable of professional page-oriented rendering.
 - [ ] Paragraph abstraction
 - [ ] Chord line abstraction
 - [ ] Layout tree abstraction
-
+- [ ] Internal song model
+- [ ] Song section abstraction
+- [ ] Verse abstraction
+- [ ] Chorus abstraction
+- [ ] Bridge abstraction
+- [ ] Chord token abstraction
+- [ ] Lyric syllable abstraction
 
 ---
 
@@ -438,32 +451,192 @@ Chords MUST visually align with lyrics.
 
 # 4. FILE FORMAT SYSTEM
 
-## 4.1 Native Format
+miniChord must use fully text-based, Git-friendly formats.
 
-- [ ] Create native `.mchord` format
-- [ ] JSON-based structure
-- [ ] Embedded metadata
-- [ ] Embedded formatting
-- [ ] Embedded ChordPro support
-- [ ] Embedded images
+The native formats MUST:
+- be human-readable,
+- work well with GitHub,
+- support clean diffs,
+- support merge operations,
+- avoid binary containers,
+- avoid opaque ZIP-based document formats,
+- preserve semantic music structure.
+
+miniChord should follow a philosophy closer to:
+- FODT,
+- Markdown,
+- YAML,
+- LaTeX,
+- Typst,
+- Jekyll,
+than traditional binary office documents.
 
 ---
 
-## 4.2 Import/Export
+## 4.1 Native Formats
 
-- [ ] TXT import/export
+miniChord must use two native formats:
+
+### `.mchord`
+
+A reusable single-song document format.
+
+Used for:
+- individual songs,
+- version control,
+- song libraries,
+- reusable worship songs,
+- ChordPro-based editing.
+
+### `.mchordbook`
+
+A multi-song project/songbook format.
+
+Used for:
+- complete worship songbooks,
+- page layout,
+- printing configuration,
+- indexes,
+- multi-song organization,
+- reusable song collections.
+
+Both formats MUST:
+- be fully text-based,
+- GitHub-friendly,
+- diff-friendly,
+- merge-friendly,
+- editable with normal text editors.
+
+---
+
+## 4.2 `.mchord` Format Requirements
+
+The `.mchord` format must:
+
+- [ ] Be text-based
+- [ ] Use YAML front matter
+- [ ] Store original ChordPro source
+- [ ] Store parsed song structure
+- [ ] Store metadata
+- [ ] Store song sections
+- [ ] Store rendering settings
+- [ ] Store transposition settings
+- [ ] Support comments
+- [ ] Support UTF-8
+- [ ] Support Git-friendly diffs
+
+### Example Structure
+
+```yaml
+---
+title: Vine a adorarte
+artist: Kayros
+key: G
+tempo: 72
+---
+
+{soc}
+[G]Vine a adorarte
+[D]Vine a postrarme
+{eoc}
+```
+
+---
+
+## 4.3 `.mchordbook` Format Requirements
+
+The `.mchordbook` format must:
+
+- [ ] Be text-based
+- [ ] Use YAML structure
+- [ ] Reference multiple `.mchord` files
+- [ ] Store page layout configuration
+- [ ] Store column configuration
+- [ ] Store margin configuration
+- [ ] Store orientation configuration
+- [ ] Store song ordering
+- [ ] Store index settings
+- [ ] Support reusable song libraries
+- [ ] Support Git-friendly diffs
+
+### Example Structure
+
+```yaml
+format: miniChordBook
+version: 1
+
+page:
+  size: A4
+  orientation: portrait
+  margins: narrow
+
+columns:
+  count: 2
+
+songs:
+  - songs/vine-a-adorarte.mchord
+  - songs/perfume-a-tus-pies.mchord
+
+index:
+  enabled: true
+  position: beginning
+```
+
+---
+
+## 4.4 Import/Export
+
 - [ ] HTML import/export
 - [ ] PDF export
 - [ ] ChordPro import/export
 - [ ] Markdown export
+- [ ] `.mchord` import/export
+- [ ] `.mchordbook` import/export
 
 ---
 
-## 4.3 Future Format Architecture
+## 4.5 Future Format Architecture
 
 - [ ] RTF plugin architecture
 - [ ] DOCX plugin architecture
 - [ ] ODT plugin architecture
+- [ ] FODT plugin architecture
+
+---
+
+## 4.6 Song Library Philosophy
+
+miniChord must support reusable song libraries.
+
+A single `.mchord` file may be reused across multiple `.mchordbook` projects.
+
+Example:
+
+- SundayMorning.mchordbook
+- YouthService.mchordbook
+- ChristmasSongs.mchordbook
+
+may all reference the same reusable song files.
+
+---
+
+## 4.7 GitHub Workflow Support
+
+miniChord formats must work well with:
+
+- Git
+- GitHub
+- GitLab
+- code review
+- pull requests
+- collaborative editing
+- version history
+
+The formats should prioritize:
+- semantic readability,
+- minimal diff noise,
+- stable formatting,
+- deterministic serialization.
 
 ---
 
@@ -588,7 +761,7 @@ Macros must be:
 - [ ] Basic text editing
 - [ ] Margins
 - [ ] PDF export
-- [ ] Native `.mwp` format
+- [ ] Native `.mchord` format
 
 ---
 
@@ -654,11 +827,9 @@ The user may have 50, 100, or more song files. The program must allow importing 
 - [ ] Add “Import Multiple Song Files…” action
 - [ ] Allow selecting many `.cho`, `.chordpro`, and `.pro` files at once
 - [ ] Allow importing an entire folder of song files
-- [ ] Preserve original line breaks and chord alignment
 - [ ] Detect song title from the first line
 - [ ] Detect artist/subtitle from the second line when available
 - [ ] Detect key from filename when available, for example `(A)` or `(G)`
-- [ ] Convert plain chord-over-lyrics text into internal song blocks
 - [ ] Convert ChordPro files into internal song blocks
 - [ ] Insert each imported song as a separate song section
 - [ ] Optionally start each song on a new page
@@ -684,7 +855,11 @@ The user may have 50, 100, or more song files. The program must allow importing 
 - [ ] Prevent chorus split across columns when possible
 - [ ] Prevent chord lines from separating from lyrics
 - [ ] Keep chord/lyric blocks together
-- [ ] Smart song block pagination
+- [ ] Smart song block pagination  
+- [ ] Keep verse blocks together when possible
+- [ ] Keep chorus blocks together when possible
+- [ ] Avoid page breaks inside short song sections
+- [ ] Prefer section-aware pagination
 
 ## 11.3 ChordPro Song Index
 
@@ -714,7 +889,16 @@ After importing many ChordPro or chord-text songs, miniChord must be able to gen
 - [ ] Store tempo
 - [ ] Store song order
 - [ ] Store ChordPro directives
-- [ ] Store plain-text source when imported from non-ChordPro files
+
+## 11.5 Song Repository Support
+
+- [ ] Support reusable song repositories
+- [ ] Support external song folders
+- [ ] Support relative song paths
+- [ ] Support Git-managed song collections
+- [ ] Detect modified songs automatically
+- [ ] Reload updated songs from disk
+- [ ] Preserve references between `.mchordbook` and `.mchord`
 
 ---
 
