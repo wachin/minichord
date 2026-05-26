@@ -14,6 +14,20 @@ Primary target:
 - Python 3.11
 - PyQt6
 
+# Project Status
+
+Current Phase:
+- Planning / Architecture
+
+Current Priorities:
+- Document engine
+- ChordPro rendering
+- Pagination
+- Git-friendly formats
+
+Long-Term Goal:
+A professional open-source WYSIWYG ChordPro editor for Linux, Windows, and macOS.
+
 ---
 
 # Core Philosophy
@@ -75,6 +89,10 @@ layout engine capable of professional page-oriented rendering.
 - [ ] Add translation infrastructure
 - [ ] Add dark/light theme support
 - [ ] Add crash-safe autosave (Data recovery strategies in case of power outages or unexpected crashes)
+- [ ] Automatic backup snapshots
+- [ ] Document recovery manager
+- [ ] Songbook recovery system
+- [ ] Crash recovery dialog
 
 ---
 
@@ -376,7 +394,7 @@ On Windows and macOS, miniChord should use bundled LibreOffice dictionaries from
 
 ```bash
 git clone https://github.com/wachin/minichord
-cd vnote.git
+cd minichord
 git submodule update --init --recursive
 ```
 
@@ -541,6 +559,21 @@ Chords MUST visually align with lyrics.
 - [ ] Directive autocomplete
 - [ ] Chord autocomplete
 - [ ] Chord transposition
+
+### Chord Transposition Engine
+
+- [ ] Detect musical keys
+- [ ] Detect major/minor keys
+- [ ] Detect slash chords
+- [ ] Detect chord modifiers
+- [ ] Support Nashville notation
+- [ ] Support sharp/flat preferences
+- [ ] Transpose entire songs
+- [ ] Transpose selected sections
+- [ ] Preserve chord formatting after transposition
+- [ ] Chord-aware spacing recalculation
+- [ ] Automatic chord alignment after transposition
+- [ ] Capo-aware transposition
 
 ---
 
@@ -833,6 +866,11 @@ Macros must be:
 - [ ] Large document optimization
 - [ ] Fast scrolling
 - [ ] Memory optimization
+- [ ] Glyph metrics cache
+- [ ] Chord layout cache
+- [ ] Page render cache
+- [ ] Incremental repaint system
+- [ ] Partial document redraw
 
 ---
 
@@ -845,6 +883,11 @@ Macros must be:
 - [ ] Duplex printing
 - [ ] Booklet mode
 - [ ] Songbook printing
+- [ ] Export complete songbooks to PDF
+- [ ] Export song indexes to PDF
+- [ ] Preserve clickable index links in exported PDF
+- [ ] Preserve multi-column layout in exported PDF
+- [ ] Preserve headers/footers in exported PDF
 
 ---
 
