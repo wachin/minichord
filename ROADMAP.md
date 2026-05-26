@@ -4,7 +4,7 @@ A lightweight but powerful WYSIWYG word processor written in Python + PyQt6.
 
 Inspired by AbiWord, but designed to be:
 - modular,
-- Linux/Microsoft/macOS friendly
+- Linux/Windows/macOS friendly
 - optimized for worship songs and ChordPro,
 - capable of professional page layout.
 
@@ -618,7 +618,7 @@ miniChord must support:
 - [ ] Parse metadata
 - [ ] Parse traditional chord-over-lyrics text
 - [ ] Convert chord-over-lyrics into internal chord model
-- [ ] Preserve chord spacing from plain text files
+- [ ] Preserve chord spacing from imported chord sheets
 - [ ] Detect chord lines automatically
 - [ ] Detect lyric lines automatically
 - [ ] Chord/lyric paired line model
@@ -1213,8 +1213,13 @@ After importing many ChordPro songs, miniChord must be able to generate an index
 
 miniChord should become:
 
-- a professional ChordPro editor,
-- a worship song book creator,
-- a real WYSIWYG page-layout editor.
+- a professional WYSIWYG ChordPro editor,
+- a semantic music document engine,
+- a worship songbook publishing system,
+- a Git-friendly music document platform,
+- a professional chord-sheet layout engine,
+- a reusable songbook composition system,
+- a Linux-friendly open-source alternative for worship musicians,
+- a modern music-aware publishing application.
 
 
