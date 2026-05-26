@@ -9,8 +9,9 @@ Inspired by AbiWord, but designed to be:
 - capable of professional page layout.
 
 Primary target:
-- Debian 12
+- Debian 12, Debian 13
 - MX Linux 23
+- Ubuntu 24.04
 - Python 3.11
 - PyQt6
 
