@@ -93,6 +93,10 @@ layout engine capable of professional page-oriented rendering.
 - [ ] Document recovery manager
 - [ ] Songbook recovery system
 - [ ] Crash recovery dialog
+- [ ] Document snapshot system
+- [ ] Songbook version snapshots
+- [ ] Restore previous snapshots
+
 
 ## 0.1 Internationalization with Qt Linguist
 
@@ -178,13 +182,18 @@ translations/
 miniChord MUST NOT use infinite scrolling editing.
 
 It MUST render:
-- [ ] independent pages,
-- [ ] page spacing,
-- [ ] page shadows,
-- [ ] printable boundaries,
-- [ ] true WYSIWYG page previews.
+- independent pages
+- page spacing
+- page shadows
+- printable boundaries
+- true WYSIWYG page previews
+
+
+### Rendering Features
+
 - [ ] Printer safe area handling
 - [ ] Non-printable margin visualization
+
 
 ### Required Page Features
 
@@ -213,6 +222,14 @@ It MUST render:
 - [ ] Section-based page orientation
 - [ ] Orientation-aware pagination
 - [ ] Orientation-aware rulers
+
+### Page Templates
+
+- [ ] Worship song template
+- [ ] Songbook template
+- [ ] Lyrics-only template
+- [ ] Landscape rehearsal template
+- [ ] Custom page templates
 
 ---
 
@@ -379,6 +396,27 @@ Each section may have:
 - [ ] Tab stops
 - [ ] Bullet lists
 - [ ] Numbered lists
+
+
+## 2.1.1 Style System
+
+miniChord must support reusable semantic document styles.
+
+### Style Features
+
+- [ ] Paragraph styles
+- [ ] Character styles
+- [ ] Song section styles
+- [ ] Chord styles
+- [ ] Verse styles
+- [ ] Chorus styles
+- [ ] Bridge styles
+- [ ] Page styles
+- [ ] Style inheritance
+- [ ] Style presets
+- [ ] User-defined styles
+- [ ] Style import/export
+- [ ] Theme-aware styles
 
 ---
 
@@ -582,6 +620,15 @@ miniChord must support:
 IMPORTANT:
 Chords MUST visually align with lyrics.
 
+
+### Chord Font System
+
+- [ ] Independent chord font settings
+- [ ] Independent lyric font settings
+- [ ] Chord baseline offset adjustment
+- [ ] Chord spacing compensation
+- [ ] Chord collision avoidance
+
 ### Rendering Requirements
 
 - [ ] Monospaced chord alignment mode
@@ -609,6 +656,9 @@ Chords MUST visually align with lyrics.
 - [ ] Directive autocomplete
 - [ ] Chord autocomplete
 - [ ] Chord transposition
+- [ ] Non-destructive chord editing
+- [ ] Preserve original spacing when possible
+- [ ] Preserve semantic song structure during edits
 
 ### Chord Transposition Engine
 
@@ -921,6 +971,9 @@ Macros must be:
 - [ ] Page render cache
 - [ ] Incremental repaint system
 - [ ] Partial document redraw
+- [ ] Song metadata index
+- [ ] Fast song search index
+- [ ] Incremental document indexing
 
 ---
 
@@ -1039,6 +1092,10 @@ The user may have 50, 100, or more song files. The program must allow importing 
 - [ ] Optionally allow songs to continue in the next column/page
 - [ ] Show import preview before final insertion
 - [ ] Report files that could not be imported
+- [ ] Detect duplicated song titles
+- [ ] Detect duplicated song IDs
+- [ ] Resolve metadata conflicts
+- [ ] Warn about conflicting song versions
 
 ## 11.2 Songbook Layout
 
@@ -1102,6 +1159,22 @@ After importing many ChordPro or chord-text songs, miniChord must be able to gen
 - [ ] Detect modified songs automatically
 - [ ] Reload updated songs from disk
 - [ ] Preserve references between `.mchordbook` and `.mchord`
+- [ ] File system watching
+- [ ] Auto-reload modified songs
+- [ ] Detect external Git updates
+- [ ] Detect merge conflicts
+
+---
+
+# 12. DOCUMENTATION SYSTEM
+
+- [ ] Developer documentation
+- [ ] User manual
+- [ ] ChordPro documentation
+- [ ] Plugin API documentation
+- [ ] Macro API documentation
+- [ ] Translation workflow documentation
+- [ ] Packaging documentation
 
 ---
 
