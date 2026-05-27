@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from minichord.document.chordpro import ChordProSong, parse_chordpro
+from minichord.document.chordpro import (
+    ChordProSong,
+    parse_chordpro,
+    render_chord_over_lyrics,
+)
 
 
 FRONT_MATTER_DELIMITER = "---"
@@ -34,6 +38,10 @@ class MiniChordDocument:
     def to_chordpro_song(self) -> ChordProSong:
         """Parse the document body as ChordPro source."""
         return parse_chordpro(self.text)
+
+    def to_chord_over_lyrics_text(self) -> str:
+        """Render the document body as monospaced chord-over-lyrics text."""
+        return render_chord_over_lyrics(self.to_chordpro_song())
 
     @classmethod
     def from_mchord(cls, content: str) -> "MiniChordDocument":

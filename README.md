@@ -13,6 +13,7 @@ editor and worship songbook layout tool.
 - PDF export through Qt printing
 - Plain-Python ChordPro parser foundation for metadata, directives, inline chords,
   and traditional chord-over-lyrics text
+- Monospaced chord-over-lyrics renderer with basic chord collision avoidance
 
 ## Debian / MX Linux Setup
 

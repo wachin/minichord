@@ -673,16 +673,16 @@ Chords MUST visually align with lyrics.
 - [ ] Independent chord font settings
 - [ ] Independent lyric font settings
 - [ ] Chord baseline offset adjustment
-- [ ] Chord spacing compensation
-- [ ] Chord collision avoidance
+- [x] Chord spacing compensation
+- [x] Chord collision avoidance
 
 ### Rendering Requirements
 
-- [ ] Monospaced chord alignment mode
+- [x] Monospaced chord alignment mode
 - [ ] Smart chord positioning
-- [ ] Chord-over-lyrics rendering
-- [ ] Prevent chord overlap
-- [ ] Dynamic spacing calculation
+- [x] Chord-over-lyrics rendering
+- [x] Prevent chord overlap
+- [x] Dynamic spacing calculation
 - [ ] Chord-aware word wrapping
 - [ ] Chord-aware line breaks
 - [ ] Print-accurate rendering

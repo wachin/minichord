@@ -7,6 +7,8 @@ from minichord.document.chordpro import (
     ChordProSong,
     ChordToken,
     parse_chordpro,
+    render_chord_line,
+    render_chord_over_lyrics,
 )
 from minichord.document.model import MiniChordDocument
 from minichord.document.page import PageLayout, PageMargins
@@ -21,4 +23,6 @@ __all__ = [
     "PageLayout",
     "PageMargins",
     "parse_chordpro",
+    "render_chord_line",
+    "render_chord_over_lyrics",
 ]

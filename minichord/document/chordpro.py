@@ -120,6 +120,46 @@ class ChordProSong:
         return tuple(line for line in self.lines if isinstance(line, ChordLyricLine))
 
 
+def render_chord_over_lyrics(song: ChordProSong) -> str:
+    """Render parsed ChordPro as monospaced chord-over-lyrics text."""
+    rendered_lines: list[str] = []
+
+    for line in song.lines:
+        if isinstance(line, BlankLine):
+            rendered_lines.append("")
+            continue
+
+        if isinstance(line, ChordProDirective):
+            directive_text = _render_directive_text(line)
+            if directive_text is not None:
+                rendered_lines.append(directive_text)
+            continue
+
+        chord_text = render_chord_line(line)
+        if chord_text:
+            rendered_lines.append(chord_text)
+        rendered_lines.append(line.lyrics)
+
+    return "\n".join(rendered_lines)
+
+
+def render_chord_line(line: ChordLyricLine) -> str:
+    """Render only the chord row for a parsed chord/lyric line."""
+    rendered: list[str] = []
+    occupied_until = 0
+
+    for chord in line.chords:
+        preferred_column = _chord_render_column(chord)
+        column = max(preferred_column, occupied_until)
+        if column > len(rendered):
+            rendered.extend(" " for _ in range(column - len(rendered)))
+
+        rendered.extend(chord.symbol)
+        occupied_until = column + len(chord.symbol) + 1
+
+    return "".join(rendered).rstrip()
+
+
 def parse_chordpro(source: str) -> ChordProSong:
     """Parse a small but useful subset of ChordPro into semantic line objects."""
     normalized = source.replace("\r\n", "\n").replace("\r", "\n")
@@ -321,6 +361,18 @@ def _is_lyric_pair_candidate(raw_line: str) -> bool:
         and not _traditional_chord_line_tokens(raw_line)
         and not _parse_chord_lyric_line(raw_line).has_chords
     )
+
+
+def _render_directive_text(directive: ChordProDirective) -> str | None:
+    if directive.canonical_name == "comment":
+        return directive.value or ""
+    return None
+
+
+def _chord_render_column(chord: ChordToken) -> int:
+    if chord.source_column is not None:
+        return max(0, chord.source_column)
+    return max(0, chord.lyric_index)
 
 
 def _is_chord_marker(symbol: str) -> bool:
