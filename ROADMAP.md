@@ -178,16 +178,16 @@ translations/
 - [ ] Create custom page-based document engine
 - [ ] Create document model abstraction
 - [ ] Create page model abstraction
-- [ ] Create layout engine abstraction
+- [x] Create layout engine abstraction
 - [ ] Create pagination engine
-- [ ] Create render pipeline
-- [ ] Separate rendering from editing logic
+- [x] Create render pipeline
+- [x] Separate rendering from editing logic
 - [ ] Separate visual layout from storage format
 - [ ] Internal document object model (DOM)
 - [ ] Song block abstraction
 - [ ] Paragraph abstraction
-- [ ] Chord line abstraction
-- [ ] Layout tree abstraction
+- [x] Chord line abstraction
+- [x] Layout tree abstraction
 - [ ] Internal song model
 - [ ] Song section abstraction
 - [ ] Verse abstraction

@@ -9,6 +9,7 @@ from minichord.document.chordpro import (
     parse_chordpro,
     render_chord_over_lyrics,
 )
+from minichord.document.layout import ChordProLayout, layout_chordpro_song
 
 
 FRONT_MATTER_DELIMITER = "---"
@@ -38,6 +39,10 @@ class MiniChordDocument:
     def to_chordpro_song(self) -> ChordProSong:
         """Parse the document body as ChordPro source."""
         return parse_chordpro(self.text)
+
+    def to_chordpro_layout(self, max_width: int | None = None) -> ChordProLayout:
+        """Build a structured render layout for the document body."""
+        return layout_chordpro_song(self.to_chordpro_song(), max_width=max_width)
 
     def to_chord_over_lyrics_text(self, max_width: int | None = None) -> str:
         """Render the document body as monospaced chord-over-lyrics text."""

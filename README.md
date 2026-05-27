@@ -15,6 +15,7 @@ editor and worship songbook layout tool.
   and traditional chord-over-lyrics text
 - Monospaced chord-over-lyrics renderer with basic chord collision avoidance
 - Chord-aware renderer wrapping for narrow columns and future pagination
+- Structured ChordPro render rows for future page, column, and paint layout
 
 ## Debian / MX Linux Setup
 
