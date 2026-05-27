@@ -38,7 +38,7 @@ Dependency policy:
 # Project Status
 
 Current Phase:
-- Planning / Architecture
+- Phase 1 — Minimal Working Prototype
 
 Current Priorities:
 - Document engine
@@ -99,11 +99,11 @@ layout engine capable of professional page-oriented rendering.
 
 ## 0. Project Bootstrap
 
-- [ ] Create project structure
-- [ ] Configure Python package layout
+- [x] Create project structure
+- [x] Configure Python package layout
 - [ ] Add Debian/MX Linux, Windows and macOS installation instructions
-- [ ] Add PyQt6 installation instructions
-- [ ] Add qt6-translations-l10n instructions
+- [x] Add PyQt6 installation instructions
+- [x] Add qt6-translations-l10n instructions
 - [ ] Add SVG application icon
 - [ ] Add About dialog
 - [ ] Add settings manager
@@ -977,9 +977,9 @@ Macros must be:
 
 ## 6.1 Main Window
 
-- [ ] Menu bar
-- [ ] Toolbar
-- [ ] Status bar
+- [x] Menu bar
+- [x] Toolbar
+- [x] Status bar
 - [ ] Sidebar
 - [ ] Page navigator
 
@@ -1062,12 +1062,12 @@ Macros must be:
 
 ## Phase 1 — Minimal Working Prototype
 
-- [ ] Main window
-- [ ] Single A4 page
-- [ ] Basic text editing
-- [ ] Margins
-- [ ] PDF export
-- [ ] Native `.mchord` format
+- [x] Main window
+- [x] Single A4 page
+- [x] Basic text editing
+- [x] Margins
+- [x] PDF export
+- [x] Native `.mchord` format
 
 ---
 
@@ -1242,4 +1242,3 @@ miniChord should become:
 - a reusable songbook composition system,
 - a Linux-friendly open-source alternative for worship musicians,
 - a modern music-aware publishing application.
-

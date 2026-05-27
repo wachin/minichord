@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=66"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "minichord"
+version = "0.1.0"
+description = "A lightweight WYSIWYG ChordPro-oriented word processor."
+readme = "README.md"
+requires-python = ">=3.11"
+
+[project.scripts]
+minichord = "minichord.app:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["minichord*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
