@@ -15,6 +15,26 @@ Primary target:
 - Python 3.11
 - PyQt6
 
+Development dependency references:
+- [Debian 12 PyQt6 packages](packages_available_debian12_pyqt6.txt)
+- [Debian 12 Python 3 packages](packages_available_debian12_python3.txt)
+
+Currently installed development packages on MX Linux 23:
+- `python3-pytest`
+- `python3-pytest-qt`
+- `python3-pyqt6`
+- `qt6-translations-l10n`
+- `python3-pyqt6.qtsvg`
+- `python3-docx`
+- `ripgrep`
+- `fd-find`
+- `python3-dev`
+
+Dependency policy:
+- Before adding a new runtime, development, testing, or packaging dependency, check the local Debian 12 package reference files above and the Debian 12 repositories.
+- If a useful required package is available but not already installed, pause development and ask the developer to install it.
+- Do not vendor or install system packages automatically during development.
+
 # Project Status
 
 Current Phase:
@@ -1222,5 +1242,4 @@ miniChord should become:
 - a reusable songbook composition system,
 - a Linux-friendly open-source alternative for worship musicians,
 - a modern music-aware publishing application.
-
 
