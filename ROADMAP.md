@@ -683,8 +683,8 @@ Chords MUST visually align with lyrics.
 - [x] Chord-over-lyrics rendering
 - [x] Prevent chord overlap
 - [x] Dynamic spacing calculation
-- [ ] Chord-aware word wrapping
-- [ ] Chord-aware line breaks
+- [x] Chord-aware word wrapping
+- [x] Chord-aware line breaks
 - [ ] Print-accurate rendering
 - [ ] Real font metrics calculation
 - [ ] Pixel-accurate chord positioning

@@ -14,6 +14,7 @@ editor and worship songbook layout tool.
 - Plain-Python ChordPro parser foundation for metadata, directives, inline chords,
   and traditional chord-over-lyrics text
 - Monospaced chord-over-lyrics renderer with basic chord collision avoidance
+- Chord-aware renderer wrapping for narrow columns and future pagination
 
 ## Debian / MX Linux Setup
 

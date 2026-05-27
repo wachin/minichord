@@ -120,8 +120,14 @@ class ChordProSong:
         return tuple(line for line in self.lines if isinstance(line, ChordLyricLine))
 
 
-def render_chord_over_lyrics(song: ChordProSong) -> str:
+def render_chord_over_lyrics(
+    song: ChordProSong,
+    max_width: int | None = None,
+) -> str:
     """Render parsed ChordPro as monospaced chord-over-lyrics text."""
+    if max_width is not None and max_width < 1:
+        raise ValueError("Maximum render width must be at least 1.")
+
     rendered_lines: list[str] = []
 
     for line in song.lines:
@@ -135,10 +141,11 @@ def render_chord_over_lyrics(song: ChordProSong) -> str:
                 rendered_lines.append(directive_text)
             continue
 
-        chord_text = render_chord_line(line)
-        if chord_text:
-            rendered_lines.append(chord_text)
-        rendered_lines.append(line.lyrics)
+        for wrapped_line in wrap_chord_lyric_line(line, max_width):
+            chord_text = render_chord_line(wrapped_line)
+            if chord_text:
+                rendered_lines.append(chord_text)
+            rendered_lines.append(wrapped_line.lyrics)
 
     return "\n".join(rendered_lines)
 
@@ -158,6 +165,40 @@ def render_chord_line(line: ChordLyricLine) -> str:
         occupied_until = column + len(chord.symbol) + 1
 
     return "".join(rendered).rstrip()
+
+
+def wrap_chord_lyric_line(
+    line: ChordLyricLine,
+    max_width: int | None,
+) -> tuple[ChordLyricLine, ...]:
+    """Wrap a chord/lyric line while keeping chords with their lyric segment."""
+    if max_width is None or line.lyrics == "":
+        return (line,)
+    if max_width < 1:
+        raise ValueError("Maximum wrap width must be at least 1.")
+
+    wrapped_lines: list[ChordLyricLine] = []
+    for start_index, end_index, next_index in _lyric_wrap_ranges(
+        line.lyrics,
+        max_width,
+    ):
+        segment_lyrics = line.lyrics[start_index:end_index]
+        segment_chords = _chords_for_wrapped_range(
+            line.chords,
+            start_index,
+            next_index,
+            len(segment_lyrics),
+        )
+        wrapped_lines.append(
+            ChordLyricLine(
+                lyrics=segment_lyrics,
+                chords=segment_chords,
+                source=line.source,
+                chord_source=line.chord_source,
+            )
+        )
+
+    return tuple(wrapped_lines)
 
 
 def parse_chordpro(source: str) -> ChordProSong:
@@ -361,6 +402,55 @@ def _is_lyric_pair_candidate(raw_line: str) -> bool:
         and not _traditional_chord_line_tokens(raw_line)
         and not _parse_chord_lyric_line(raw_line).has_chords
     )
+
+
+def _lyric_wrap_ranges(
+    lyrics: str,
+    max_width: int,
+) -> tuple[tuple[int, int, int], ...]:
+    ranges: list[tuple[int, int, int]] = []
+    start_index = 0
+    lyric_length = len(lyrics)
+
+    while start_index < lyric_length:
+        remaining_width = lyric_length - start_index
+        if remaining_width <= max_width:
+            ranges.append((start_index, lyric_length, lyric_length))
+            break
+
+        limit = start_index + max_width
+        space_index = lyrics.rfind(" ", start_index + 1, limit + 1)
+        if space_index > start_index:
+            next_index = space_index
+            while next_index < lyric_length and lyrics[next_index].isspace():
+                next_index += 1
+            ranges.append((start_index, space_index, next_index))
+            start_index = next_index
+            continue
+
+        next_index = min(limit, lyric_length)
+        ranges.append((start_index, next_index, next_index))
+        start_index = next_index
+
+    return tuple(ranges)
+
+
+def _chords_for_wrapped_range(
+    chords: tuple[ChordToken, ...],
+    start_index: int,
+    next_index: int,
+    segment_length: int,
+) -> tuple[ChordToken, ...]:
+    segment_chords: list[ChordToken] = []
+    for chord in chords:
+        if start_index <= chord.lyric_index < next_index:
+            segment_chords.append(
+                ChordToken(
+                    symbol=chord.symbol,
+                    lyric_index=min(chord.lyric_index - start_index, segment_length),
+                )
+            )
+    return tuple(segment_chords)
 
 
 def _render_directive_text(directive: ChordProDirective) -> str | None:

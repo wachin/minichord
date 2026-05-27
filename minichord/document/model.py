@@ -39,9 +39,12 @@ class MiniChordDocument:
         """Parse the document body as ChordPro source."""
         return parse_chordpro(self.text)
 
-    def to_chord_over_lyrics_text(self) -> str:
+    def to_chord_over_lyrics_text(self, max_width: int | None = None) -> str:
         """Render the document body as monospaced chord-over-lyrics text."""
-        return render_chord_over_lyrics(self.to_chordpro_song())
+        return render_chord_over_lyrics(
+            self.to_chordpro_song(),
+            max_width=max_width,
+        )
 
     @classmethod
     def from_mchord(cls, content: str) -> "MiniChordDocument":

@@ -9,6 +9,7 @@ from minichord.document.chordpro import (
     parse_chordpro,
     render_chord_line,
     render_chord_over_lyrics,
+    wrap_chord_lyric_line,
 )
 from minichord.document.model import MiniChordDocument
 from minichord.document.page import PageLayout, PageMargins
@@ -25,4 +26,5 @@ __all__ = [
     "parse_chordpro",
     "render_chord_line",
     "render_chord_over_lyrics",
+    "wrap_chord_lyric_line",
 ]
