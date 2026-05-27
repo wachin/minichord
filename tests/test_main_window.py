@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import QApplication
 from minichord import __version__
 from minichord.app import build_application
 from minichord.autosave import AutosaveManager
+from minichord.backup import BackupManager
 import minichord.main_window as main_window_module
 from minichord.main_window import MainWindow
 from minichord.resources import APP_ICON_PATH
@@ -228,3 +229,22 @@ def test_main_window_save_clears_existing_autosave(qtbot, tmp_path):
     window.save_path(tmp_path / "song.mchord")
 
     assert not draft_path.exists()
+
+
+def test_main_window_creates_backup_before_overwriting_file(qtbot, tmp_path):
+    backup_manager = BackupManager(tmp_path / "backups")
+    window = MainWindow(
+        settings=temporary_settings(tmp_path),
+        backup_manager=backup_manager,
+    )
+    qtbot.addWidget(window)
+    path = tmp_path / "song.mchord"
+    path.write_text("old version\n", encoding="utf-8")
+
+    window.editor.set_text("[A]New version")
+    window.save_path(path)
+
+    snapshots = backup_manager.snapshots_for(path)
+    assert len(snapshots) == 1
+    assert snapshots[0].read_text(encoding="utf-8") == "old version\n"
+    assert "[A]New version" in path.read_text(encoding="utf-8")

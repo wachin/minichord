@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
 
 from minichord import __version__
 from minichord.autosave import DEFAULT_AUTOSAVE_INTERVAL_MS, AutosaveManager
+from minichord.backup import BackupManager
 from minichord.document import MiniChordDocument
 from minichord.resources import app_icon
 from minichord.settings import THEME_DARK, THEME_LIGHT, THEME_SYSTEM, SettingsManager
@@ -31,11 +32,13 @@ class MainWindow(QMainWindow):
         self,
         settings: SettingsManager | None = None,
         autosave_manager: AutosaveManager | None = None,
+        backup_manager: BackupManager | None = None,
         autosave_interval_ms: int = DEFAULT_AUTOSAVE_INTERVAL_MS,
     ):
         super().__init__()
         self.settings = settings or SettingsManager()
         self.autosave_manager = autosave_manager or AutosaveManager()
+        self.backup_manager = backup_manager or BackupManager()
         self._autosave_draft_id = AutosaveManager.new_draft_id()
         self._autosave_dirty = False
         self._autosave_suspended = False
@@ -144,6 +147,13 @@ class MainWindow(QMainWindow):
         document = MiniChordDocument(text=self.editor.text())
         previous_path = self.current_path
         previous_draft_id = self._autosave_draft_id
+        if path.is_file():
+            try:
+                self.backup_manager.create_snapshot(path)
+            except OSError as exc:
+                QMessageBox.critical(self, self.tr("Backup Failed"), str(exc))
+                return
+
         try:
             path.write_text(document.to_mchord(), encoding="utf-8")
         except OSError as exc:

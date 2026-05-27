@@ -13,6 +13,8 @@ editor and worship songbook layout tool.
 - PDF export through Qt printing
 - System/light/dark application theme selection
 - Crash-safe autosave drafts for modified documents
+- Automatic backup snapshots before overwriting saved documents
+- Document recovery discovery for autosaved drafts
 - Plain-Python ChordPro parser foundation for metadata, directives, inline chords,
   and traditional chord-over-lyrics text
 - Monospaced chord-over-lyrics renderer with basic chord collision avoidance

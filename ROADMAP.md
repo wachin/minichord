@@ -112,8 +112,8 @@ layout engine capable of professional page-oriented rendering.
 - [x] Add translation infrastructure
 - [x] Add dark/light theme support
 - [x] Add crash-safe autosave (Data recovery strategies in case of power outages or unexpected crashes)
-- [ ] Automatic backup snapshots
-- [ ] Document recovery manager
+- [x] Automatic backup snapshots
+- [x] Document recovery manager
 - [ ] Songbook recovery system
 - [ ] Crash recovery dialog
 - [ ] Document snapshot system
