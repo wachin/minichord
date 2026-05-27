@@ -16,6 +16,12 @@ minichord = "minichord.app:main"
 where = ["."]
 include = ["minichord*"]
 
+[tool.setuptools.package-data]
+minichord = ["assets/*.svg"]
+
+[tool.setuptools.data-files]
+"share/minichord/translations" = ["translations/*.qm"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]

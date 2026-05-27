@@ -26,6 +26,8 @@ Currently installed development packages on MX Linux 23:
 - `qt6-translations-l10n`
 - `python3-pyqt6.qtsvg`
 - `python3-docx`
+- `pyqt6-dev-tools`
+- `qt6-l10n-tools`
 - `ripgrep`
 - `fd-find`
 - `python3-dev`
@@ -101,13 +103,13 @@ layout engine capable of professional page-oriented rendering.
 
 - [x] Create project structure
 - [x] Configure Python package layout
-- [ ] Add Debian/MX Linux, Windows and macOS installation instructions
+- [x] Add Debian/MX Linux, Windows and macOS installation instructions
 - [x] Add PyQt6 installation instructions
 - [x] Add qt6-translations-l10n instructions
-- [ ] Add SVG application icon
-- [ ] Add About dialog
-- [ ] Add settings manager
-- [ ] Add translation infrastructure
+- [x] Add SVG application icon
+- [x] Add About dialog
+- [x] Add settings manager
+- [x] Add translation infrastructure
 - [ ] Add dark/light theme support
 - [ ] Add crash-safe autosave (Data recovery strategies in case of power outages or unexpected crashes)
 - [ ] Automatic backup snapshots
@@ -133,24 +135,24 @@ The application must use:
 
 ### Requirements
 
-- [ ] Wrap all user-visible strings with `self.tr()` or `QCoreApplication.translate()`
-- [ ] Keep translation files under `translations/`
-- [ ] Create initial Spanish translation file: `translations/minichord_es.ts`
-- [ ] Create optional English translation file: `translations/minichord_en.ts`
-- [ ] Compile `.ts` files into `.qm` files using `lrelease`
-- [ ] Load `.qm` files at startup using `QTranslator`
-- [ ] Detect system language using `QLocale`
+- [x] Wrap all user-visible strings with `self.tr()` or `QCoreApplication.translate()`
+- [x] Keep translation files under `translations/`
+- [x] Create initial Spanish translation file: `translations/minichord_es.ts`
+- [x] Create optional English translation file: `translations/minichord_en.ts`
+- [x] Compile `.ts` files into `.qm` files using `lrelease`
+- [x] Load `.qm` files at startup using `QTranslator`
+- [x] Detect system language using `QLocale`
 - [ ] Allow manual language selection in Preferences
-- [ ] Save selected language in settings
+- [x] Save selected language in settings
 - [ ] Restart or reload UI after language change
-- [ ] Use `qt6-translations-l10n` for native Qt dialogs on Linux
-- [ ] Document the translation workflow in README
+- [x] Use `qt6-translations-l10n` for native Qt dialogs on Linux
+- [x] Document the translation workflow in README
 
 ### Qt Linguist Workflow
 
 ```bash
 # Generate or update TS translation files
-pylupdate6 minichord/ -ts translations/minichord_es.ts
+pylupdate6 minichord/ --ts translations/minichord_es.ts
 
 # Open translation file in Qt Linguist
 linguist-qt6 translations/minichord_es.ts

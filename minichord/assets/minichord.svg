@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="miniChord application icon">
+  <defs>
+    <linearGradient id="background" x1="28" y1="24" x2="228" y2="232" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+    <linearGradient id="page" x1="74" y1="43" x2="181" y2="207" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e0f2fe"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="16" y="16" width="224" height="224" rx="40" fill="url(#background)"/>
+  <path d="M76 43h78l40 40v127a10 10 0 0 1-10 10H76a10 10 0 0 1-10-10V53a10 10 0 0 1 10-10z" fill="#082f49" opacity=".24"/>
+  <path d="M72 39h82l40 40v127a10 10 0 0 1-10 10H72a10 10 0 0 1-10-10V49a10 10 0 0 1 10-10z" fill="url(#page)"/>
+  <path d="M154 39v34a6 6 0 0 0 6 6h34z" fill="#bae6fd"/>
+  <path d="M162 79h32l-40-40v32a8 8 0 0 0 8 8z" fill="#075985" opacity=".16"/>
+
+  <path d="M91 100c0-10 8-18 19-18h34c10 0 19 8 19 18v37c0 10-8 18-19 18h-8v-14h8c2 0 4-2 4-4v-37c0-2-2-4-4-4h-34c-2 0-4 2-4 4v37c0 2 2 4 4 4h8v14h-8c-10 0-19-8-19-18z" fill="#0f766e"/>
+  <path d="M119 74h17v104h-17z" fill="#1e3a8a"/>
+
+  <path d="M87 179h82" stroke="#0f172a" stroke-width="8" stroke-linecap="round"/>
+  <path d="M87 198h52" stroke="#0f766e" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="169" cy="198" r="8" fill="#facc15"/>
+</svg>
