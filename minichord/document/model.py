@@ -10,6 +10,7 @@ from minichord.document.chordpro import (
     render_chord_over_lyrics,
 )
 from minichord.document.layout import ChordProLayout, layout_chordpro_song
+from minichord.document.pagination import PaginatedLayout, paginate_layout
 
 
 FRONT_MATTER_DELIMITER = "---"
@@ -43,6 +44,19 @@ class MiniChordDocument:
     def to_chordpro_layout(self, max_width: int | None = None) -> ChordProLayout:
         """Build a structured render layout for the document body."""
         return layout_chordpro_song(self.to_chordpro_song(), max_width=max_width)
+
+    def to_paginated_layout(
+        self,
+        rows_per_column: int,
+        column_count: int = 1,
+        max_width: int | None = None,
+    ) -> PaginatedLayout:
+        """Build a row-based paginated layout for the document body."""
+        return paginate_layout(
+            self.to_chordpro_layout(max_width=max_width),
+            rows_per_column=rows_per_column,
+            column_count=column_count,
+        )
 
     def to_chord_over_lyrics_text(self, max_width: int | None = None) -> str:
         """Render the document body as monospaced chord-over-lyrics text."""

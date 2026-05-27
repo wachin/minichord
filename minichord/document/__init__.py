@@ -13,6 +13,12 @@ from minichord.document.chordpro import (
 )
 from minichord.document.layout import ChordProLayout, RenderRow, layout_chordpro_song
 from minichord.document.model import MiniChordDocument
+from minichord.document.pagination import (
+    PaginatedLayout,
+    RenderColumn,
+    RenderPage,
+    paginate_layout,
+)
 from minichord.document.page import PageLayout, PageMargins
 
 __all__ = [
@@ -23,10 +29,14 @@ __all__ = [
     "ChordProSong",
     "ChordToken",
     "MiniChordDocument",
+    "PaginatedLayout",
     "PageLayout",
     "PageMargins",
+    "RenderColumn",
+    "RenderPage",
     "RenderRow",
     "layout_chordpro_song",
+    "paginate_layout",
     "parse_chordpro",
     "render_chord_line",
     "render_chord_over_lyrics",
