@@ -303,7 +303,7 @@ Changing margins MUST:
 - [x] Automatic page creation
 - [x] Text reflow between pages
 - [ ] Paragraph splitting between pages
-- [ ] Keep-with-next support
+- [x] Keep-with-next support
 - [ ] Widow/orphan control
 - [ ] Page break before paragraph
 - [ ] Manual page breaks
@@ -1165,8 +1165,8 @@ The user may have 50, 100, or more song files. The program must allow importing 
 - [ ] Allow custom section heading style
 - [ ] Allow custom chord style
 - [ ] Prevent chorus split across columns when possible
-- [ ] Prevent chord lines from separating from lyrics
-- [ ] Keep chord/lyric blocks together
+- [x] Prevent chord lines from separating from lyrics
+- [x] Keep chord/lyric blocks together
 - [ ] Smart song block pagination  
 - [ ] Keep verse blocks together when possible
 - [ ] Keep chorus blocks together when possible

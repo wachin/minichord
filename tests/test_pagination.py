@@ -14,13 +14,37 @@ def test_paginate_single_column_creates_pages_from_row_capacity():
     song = parse_chordpro("[C]One\n[D]Two\n[Em]Three")
     layout = layout_chordpro_song(song)
 
-    pagination = paginate_layout(layout, rows_per_column=3)
+    pagination = paginate_layout(layout, rows_per_column=4)
 
     assert pagination.page_count == 2
     assert pagination.row_count == 6
-    assert [page.line_count for page in pagination.pages] == [3, 3]
-    assert pagination.pages[0].to_text() == "C\nOne\nD"
-    assert pagination.pages[1].to_text() == "Two\nEm\nThree"
+    assert [page.line_count for page in pagination.pages] == [4, 2]
+    assert pagination.pages[0].to_text() == "C\nOne\nD\nTwo"
+    assert pagination.pages[1].to_text() == "Em\nThree"
+
+
+def test_paginate_keeps_chord_and_lyric_rows_together():
+    song = parse_chordpro("[C]One\n[D]Two")
+    layout = layout_chordpro_song(song)
+
+    pagination = paginate_layout(layout, rows_per_column=3)
+
+    assert pagination.page_count == 2
+    assert [page.to_text() for page in pagination.pages] == [
+        "C\nOne",
+        "D\nTwo",
+    ]
+
+
+def test_paginate_keeps_oversized_group_together_in_empty_column():
+    song = parse_chordpro("[C]One")
+    layout = layout_chordpro_song(song)
+
+    pagination = paginate_layout(layout, rows_per_column=1)
+
+    assert pagination.page_count == 1
+    assert pagination.pages[0].columns[0].line_count == 2
+    assert pagination.pages[0].to_text() == "C\nOne"
 
 
 def test_paginate_flows_rows_across_columns_before_next_page():

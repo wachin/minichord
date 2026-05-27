@@ -82,19 +82,30 @@ def paginate_layout(
         raise ValueError("Column count must be at least 1.")
 
     pages: list[RenderPage] = []
-    row_index = 0
+    row_groups = _keep_together_row_groups(layout.rows)
+    group_index = 0
     page_index = 0
 
-    while row_index < len(layout.rows) or (ensure_page and not pages):
+    while group_index < len(row_groups) or (ensure_page and not pages):
         columns: list[RenderColumn] = []
         for column_index in range(column_count):
-            column_rows = layout.rows[row_index : row_index + rows_per_column]
-            row_index += len(column_rows)
+            column_rows: list[RenderRow] = []
+            while group_index < len(row_groups):
+                next_group = row_groups[group_index]
+                if column_rows and len(column_rows) + len(next_group) > rows_per_column:
+                    break
+
+                column_rows.extend(next_group)
+                group_index += 1
+
+                if len(column_rows) >= rows_per_column:
+                    break
+
             columns.append(
                 RenderColumn(
                     page_index=page_index,
                     column_index=column_index,
-                    rows=column_rows,
+                    rows=tuple(column_rows),
                 )
             )
 
@@ -111,3 +122,25 @@ def paginate_layout(
         rows_per_column=rows_per_column,
         column_count=column_count,
     )
+
+
+def _keep_together_row_groups(
+    rows: tuple[RenderRow, ...],
+) -> tuple[tuple[RenderRow, ...], ...]:
+    groups: list[tuple[RenderRow, ...]] = []
+    current_group: list[RenderRow] = []
+    current_key: tuple[int, int] | None = None
+
+    for row in rows:
+        row_key = (row.source_line_index, row.segment_index)
+        if current_group and row_key != current_key:
+            groups.append(tuple(current_group))
+            current_group = []
+
+        current_group.append(row)
+        current_key = row_key
+
+    if current_group:
+        groups.append(tuple(current_group))
+
+    return tuple(groups)
