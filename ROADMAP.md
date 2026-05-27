@@ -110,8 +110,8 @@ layout engine capable of professional page-oriented rendering.
 - [x] Add About dialog
 - [x] Add settings manager
 - [x] Add translation infrastructure
-- [ ] Add dark/light theme support
-- [ ] Add crash-safe autosave (Data recovery strategies in case of power outages or unexpected crashes)
+- [x] Add dark/light theme support
+- [x] Add crash-safe autosave (Data recovery strategies in case of power outages or unexpected crashes)
 - [ ] Automatic backup snapshots
 - [ ] Document recovery manager
 - [ ] Songbook recovery system

@@ -11,6 +11,8 @@ editor and worship songbook layout tool.
 - Page margins in the editor surface
 - Save/load support for the initial text-based `.mchord` format
 - PDF export through Qt printing
+- System/light/dark application theme selection
+- Crash-safe autosave drafts for modified documents
 - Plain-Python ChordPro parser foundation for metadata, directives, inline chords,
   and traditional chord-over-lyrics text
 - Monospaced chord-over-lyrics renderer with basic chord collision avoidance

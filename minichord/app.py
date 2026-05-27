@@ -12,6 +12,7 @@ from minichord.i18n import install_translations
 from minichord.main_window import MainWindow
 from minichord.resources import app_icon
 from minichord.settings import APPLICATION_NAME, ORGANIZATION_NAME, SettingsManager
+from minichord.theme import apply_theme
 
 
 def build_application(
@@ -27,7 +28,9 @@ def build_application(
     app.setOrganizationName(ORGANIZATION_NAME)
     app.setApplicationVersion(__version__)
     app.setWindowIcon(app_icon())
-    install_translations(app, (settings or SettingsManager()).language())
+    settings_manager = settings or SettingsManager()
+    install_translations(app, settings_manager.language())
+    apply_theme(app, settings_manager.theme())
     return app
 
 

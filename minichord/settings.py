@@ -15,6 +15,11 @@ APPLICATION_NAME = "miniChord"
 DEFAULT_MAIN_WINDOW_SIZE = (1100, 850)
 DEFAULT_RECENT_FILE_LIMIT = 10
 DEFAULT_LANGUAGE = "system"
+THEME_SYSTEM = "system"
+THEME_LIGHT = "light"
+THEME_DARK = "dark"
+DEFAULT_THEME = THEME_SYSTEM
+SUPPORTED_THEMES = (THEME_SYSTEM, THEME_LIGHT, THEME_DARK)
 
 
 class SettingsManager:
@@ -26,6 +31,7 @@ class SettingsManager:
     LAST_DIRECTORY_KEY = "files/lastDirectory"
     RECENT_FILES_KEY = "files/recent"
     LANGUAGE_KEY = "i18n/language"
+    THEME_KEY = "ui/theme"
 
     def __init__(self, qsettings: QSettings | None = None):
         self._settings = qsettings or QSettings(ORGANIZATION_NAME, APPLICATION_NAME)
@@ -158,12 +164,29 @@ class SettingsManager:
         """Persist the requested UI language code."""
         self._settings.setValue(self.LANGUAGE_KEY, language.strip() or DEFAULT_LANGUAGE)
 
+    def theme(self) -> str:
+        """Return the requested UI theme."""
+        value = self._settings.value(self.THEME_KEY, DEFAULT_THEME)
+        return normalized_theme(str(value) if value not in (None, "") else DEFAULT_THEME)
+
+    def set_theme(self, theme: str) -> None:
+        """Persist the requested UI theme."""
+        self._settings.setValue(self.THEME_KEY, normalized_theme(theme))
+
     def _stored_window_size(self, default_size: tuple[int, int]) -> QSize:
         stored_size = self._settings.value(self.MAIN_WINDOW_SIZE_KEY)
         if isinstance(stored_size, QSize) and _is_usable_size(stored_size):
             return stored_size
 
         return QSize(default_size[0], default_size[1])
+
+
+def normalized_theme(theme: str) -> str:
+    """Return a supported theme name, falling back to the system theme."""
+    normalized = theme.strip().lower()
+    if normalized in SUPPORTED_THEMES:
+        return normalized
+    return DEFAULT_THEME
 
 
 def _normalized_path(path: str | Path) -> str:

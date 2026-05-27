@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PyQt6.QtCore import PYQT_VERSION_STR, QT_VERSION_STR, QMarginsF
-from PyQt6.QtGui import QAction, QPageLayout, QPageSize
+from PyQt6.QtCore import PYQT_VERSION_STR, QT_VERSION_STR, QMarginsF, QTimer
+from PyQt6.QtGui import QAction, QActionGroup, QPageLayout, QPageSize
 from PyQt6.QtPrintSupport import QPrinter
 from PyQt6.QtWidgets import (
+    QApplication,
     QFileDialog,
     QMainWindow,
     QMessageBox,
@@ -15,19 +16,36 @@ from PyQt6.QtWidgets import (
 )
 
 from minichord import __version__
+from minichord.autosave import DEFAULT_AUTOSAVE_INTERVAL_MS, AutosaveManager
 from minichord.document import MiniChordDocument
 from minichord.resources import app_icon
-from minichord.settings import SettingsManager
+from minichord.settings import THEME_DARK, THEME_LIGHT, THEME_SYSTEM, SettingsManager
+from minichord.theme import apply_theme
 from minichord.ui.page_editor import PageEditor
 
 
 class MainWindow(QMainWindow):
     """Top-level miniChord window with basic file actions."""
 
-    def __init__(self, settings: SettingsManager | None = None):
+    def __init__(
+        self,
+        settings: SettingsManager | None = None,
+        autosave_manager: AutosaveManager | None = None,
+        autosave_interval_ms: int = DEFAULT_AUTOSAVE_INTERVAL_MS,
+    ):
         super().__init__()
         self.settings = settings or SettingsManager()
+        self.autosave_manager = autosave_manager or AutosaveManager()
+        self._autosave_draft_id = AutosaveManager.new_draft_id()
+        self._autosave_dirty = False
+        self._autosave_suspended = False
+        self._apply_current_theme()
         self.editor = PageEditor()
+        self._autosave_timer = QTimer(self)
+        self._autosave_timer.setSingleShot(True)
+        self._autosave_timer.setInterval(max(1, autosave_interval_ms))
+        self._autosave_timer.timeout.connect(self.perform_autosave)
+        self.editor.text_document().contentsChanged.connect(self._schedule_autosave)
         self.current_path: Path | None = None
         self.setWindowIcon(app_icon())
         self.setCentralWidget(self.editor)
@@ -36,12 +54,15 @@ class MainWindow(QMainWindow):
         self._create_actions()
         self._create_menus()
         self._create_toolbar()
+        self._sync_theme_actions()
         self.settings.restore_main_window(self)
         self.statusBar().showMessage(self.tr("Ready"))
 
     def new_document(self) -> None:
+        self._clear_current_autosave()
         self.current_path = None
-        self.editor.set_text("")
+        self._autosave_draft_id = AutosaveManager.new_draft_id()
+        self._set_editor_text_without_autosave("")
         self.setWindowTitle(self.tr("miniChord - Untitled"))
         self.statusBar().showMessage(self.tr("New document"))
 
@@ -109,10 +130,11 @@ class MainWindow(QMainWindow):
 
         if path.suffix == ".mchord":
             document = MiniChordDocument.from_mchord(content)
-            self.editor.set_text(document.text)
+            self._set_editor_text_without_autosave(document.text)
         else:
-            self.editor.set_text(content)
+            self._set_editor_text_without_autosave(content)
 
+        self._clear_current_autosave()
         self.current_path = path
         self.settings.remember_file(path)
         self.setWindowTitle(self.tr("miniChord - {name}").format(name=path.name))
@@ -120,19 +142,61 @@ class MainWindow(QMainWindow):
 
     def save_path(self, path: Path) -> None:
         document = MiniChordDocument(text=self.editor.text())
+        previous_path = self.current_path
+        previous_draft_id = self._autosave_draft_id
         try:
             path.write_text(document.to_mchord(), encoding="utf-8")
         except OSError as exc:
             QMessageBox.critical(self, self.tr("Save Failed"), str(exc))
             return
 
+        self.autosave_manager.clear(previous_path, previous_draft_id)
         self.current_path = path
+        self.autosave_manager.clear(self.current_path, self._autosave_draft_id)
+        self._autosave_dirty = False
+        self._autosave_timer.stop()
         self.settings.remember_file(path)
         self.setWindowTitle(self.tr("miniChord - {name}").format(name=path.name))
         self.statusBar().showMessage(self.tr("Saved: {path}").format(path=path))
 
     def show_about_dialog(self) -> None:
         QMessageBox.about(self, self.tr("About miniChord"), self._about_text())
+
+    def set_theme(self, theme: str) -> None:
+        self.settings.set_theme(theme)
+        self.settings.sync()
+        self._apply_current_theme()
+        self._sync_theme_actions()
+        self.statusBar().showMessage(
+            self.tr("Theme: {theme}").format(theme=self._theme_label(self.settings.theme()))
+        )
+
+    def perform_autosave(self, force: bool = False) -> Path | None:
+        """Write a crash-recovery draft when the document has pending edits."""
+        self._autosave_timer.stop()
+        if not force and not self._autosave_dirty:
+            return None
+
+        text = self.editor.text()
+        if self.current_path is None and not text.strip():
+            self._clear_current_autosave()
+            return None
+
+        try:
+            draft = self.autosave_manager.write(
+                MiniChordDocument(text=text),
+                source_path=self.current_path,
+                draft_id=self._autosave_draft_id,
+            )
+        except OSError as exc:
+            self.statusBar().showMessage(
+                self.tr("Autosave failed: {error}").format(error=exc)
+            )
+            return None
+
+        self._autosave_dirty = False
+        self.statusBar().showMessage(self.tr("Autosaved draft"))
+        return draft.path
 
     def _about_text(self) -> str:
         return self.tr(
@@ -173,6 +237,22 @@ class MainWindow(QMainWindow):
         self.about_action = QAction(self.tr("About miniChord"), self)
         self.about_action.triggered.connect(self.show_about_dialog)
 
+        self.theme_action_group = QActionGroup(self)
+        self.theme_action_group.setExclusive(True)
+
+        self.system_theme_action = self._create_theme_action(
+            self.tr("System"),
+            THEME_SYSTEM,
+        )
+        self.light_theme_action = self._create_theme_action(
+            self.tr("Light"),
+            THEME_LIGHT,
+        )
+        self.dark_theme_action = self._create_theme_action(
+            self.tr("Dark"),
+            THEME_DARK,
+        )
+
     def _create_menus(self) -> None:
         file_menu = self.menuBar().addMenu(self.tr("File"))
         file_menu.addAction(self.new_action)
@@ -183,6 +263,12 @@ class MainWindow(QMainWindow):
         file_menu.addAction(self.export_pdf_action)
         file_menu.addSeparator()
         file_menu.addAction(self.quit_action)
+
+        view_menu = self.menuBar().addMenu(self.tr("View"))
+        theme_menu = view_menu.addMenu(self.tr("Theme"))
+        theme_menu.addAction(self.system_theme_action)
+        theme_menu.addAction(self.light_theme_action)
+        theme_menu.addAction(self.dark_theme_action)
 
         help_menu = self.menuBar().addMenu(self.tr("Help"))
         help_menu.addAction(self.about_action)
@@ -203,6 +289,54 @@ class MainWindow(QMainWindow):
             return ""
         return str(directory)
 
+    def _create_theme_action(self, label: str, theme: str) -> QAction:
+        action = QAction(label, self)
+        action.setCheckable(True)
+        action.setData(theme)
+        action.triggered.connect(lambda checked=False, selected=theme: self.set_theme(selected))
+        self.theme_action_group.addAction(action)
+        return action
+
+    def _sync_theme_actions(self) -> None:
+        current_theme = self.settings.theme()
+        for action in self.theme_action_group.actions():
+            action.setChecked(action.data() == current_theme)
+
+    def _apply_current_theme(self) -> None:
+        app = QApplication.instance()
+        if isinstance(app, QApplication):
+            apply_theme(app, self.settings.theme())
+
+    def _theme_label(self, theme: str) -> str:
+        labels = {
+            THEME_SYSTEM: self.tr("System"),
+            THEME_LIGHT: self.tr("Light"),
+            THEME_DARK: self.tr("Dark"),
+        }
+        return labels.get(theme, labels[THEME_SYSTEM])
+
+    def _schedule_autosave(self) -> None:
+        if self._autosave_suspended:
+            return
+
+        self._autosave_dirty = True
+        self._autosave_timer.start()
+
+    def _set_editor_text_without_autosave(self, text: str) -> None:
+        self._autosave_suspended = True
+        try:
+            self.editor.set_text(text)
+        finally:
+            self._autosave_suspended = False
+        self._autosave_dirty = False
+        self._autosave_timer.stop()
+
+    def _clear_current_autosave(self) -> None:
+        self.autosave_manager.clear(self.current_path, self._autosave_draft_id)
+        self._autosave_dirty = False
+        self._autosave_timer.stop()
+
     def closeEvent(self, event) -> None:  # noqa: ANN001 - Qt override
+        self.perform_autosave()
         self.settings.save_main_window(self)
         super().closeEvent(event)

@@ -1,17 +1,23 @@
 from pathlib import Path
 
 from PyQt6.QtCore import QByteArray, QSize
+from PyQt6.QtWidgets import QApplication
 
 from minichord import __version__
 from minichord.app import build_application
+from minichord.autosave import AutosaveManager
 import minichord.main_window as main_window_module
 from minichord.main_window import MainWindow
 from minichord.resources import APP_ICON_PATH
 from minichord.settings import (
     APPLICATION_NAME,
     ORGANIZATION_NAME,
+    THEME_DARK,
+    THEME_LIGHT,
+    THEME_SYSTEM,
     SettingsManager,
 )
+from minichord.theme import CURRENT_THEME_PROPERTY, EFFECTIVE_THEME_PROPERTY
 
 
 def temporary_settings(tmp_path) -> SettingsManager:
@@ -45,6 +51,38 @@ def test_settings_manager_persists_raw_values(tmp_path):
     reloaded = temporary_settings(tmp_path)
 
     assert reloaded.value("ui/theme") == "dark"
+
+
+def test_settings_manager_persists_theme(tmp_path):
+    settings = temporary_settings(tmp_path)
+    settings.set_theme(THEME_DARK)
+    settings.sync()
+
+    reloaded = temporary_settings(tmp_path)
+
+    assert reloaded.theme() == THEME_DARK
+
+
+def test_settings_manager_rejects_unknown_theme(tmp_path):
+    settings = temporary_settings(tmp_path)
+    settings.set_theme("unknown")
+    settings.sync()
+
+    reloaded = temporary_settings(tmp_path)
+
+    assert reloaded.theme() == THEME_SYSTEM
+
+
+def test_build_application_applies_saved_theme(qtbot, tmp_path):
+    settings = temporary_settings(tmp_path)
+    settings.set_theme(THEME_DARK)
+    settings.sync()
+
+    app = build_application([], settings=settings)
+
+    assert app.property(CURRENT_THEME_PROPERTY) == THEME_DARK
+    assert app.property(EFFECTIVE_THEME_PROPERTY) == THEME_DARK
+    assert "QScrollArea#pageScrollArea" in app.styleSheet()
 
 
 def test_settings_manager_tracks_recent_files(tmp_path):
@@ -100,6 +138,25 @@ def test_main_window_has_about_dialog_action(qtbot, tmp_path):
     assert window.about_action in help_menu.actions()
 
 
+def test_main_window_exposes_theme_menu(qtbot, tmp_path):
+    settings = temporary_settings(tmp_path)
+    settings.set_theme(THEME_LIGHT)
+    window = MainWindow(settings=settings)
+    qtbot.addWidget(window)
+
+    menu_titles = [action.text() for action in window.menuBar().actions()]
+    assert "View" in menu_titles
+    assert window.light_theme_action.isChecked()
+
+    window.dark_theme_action.trigger()
+
+    app = QApplication.instance()
+    assert settings.theme() == THEME_DARK
+    assert window.dark_theme_action.isChecked()
+    assert app is not None
+    assert app.property(CURRENT_THEME_PROPERTY) == THEME_DARK
+
+
 def test_about_dialog_shows_version_and_toolkit_details(qtbot, monkeypatch, tmp_path):
     captured = {}
 
@@ -137,3 +194,37 @@ def test_main_window_saves_mchord_file(qtbot, tmp_path):
     assert "[C]Amazing grace" in content
     assert settings.recent_files() == [path.resolve(strict=False)]
     assert settings.last_directory() == tmp_path.resolve(strict=False)
+
+
+def test_main_window_autosaves_modified_document(qtbot, tmp_path):
+    autosave_manager = AutosaveManager(tmp_path / "autosave")
+    window = MainWindow(
+        settings=temporary_settings(tmp_path),
+        autosave_manager=autosave_manager,
+    )
+    qtbot.addWidget(window)
+
+    window.editor.set_text("[G]Blessed assurance")
+    draft_path = window.perform_autosave(force=True)
+
+    assert draft_path is not None
+    assert draft_path.is_file()
+    assert "[G]Blessed assurance" in draft_path.read_text(encoding="utf-8")
+
+
+def test_main_window_save_clears_existing_autosave(qtbot, tmp_path):
+    autosave_manager = AutosaveManager(tmp_path / "autosave")
+    window = MainWindow(
+        settings=temporary_settings(tmp_path),
+        autosave_manager=autosave_manager,
+    )
+    qtbot.addWidget(window)
+
+    window.editor.set_text("[D]How great")
+    draft_path = window.perform_autosave(force=True)
+    assert draft_path is not None
+    assert draft_path.exists()
+
+    window.save_path(tmp_path / "song.mchord")
+
+    assert not draft_path.exists()

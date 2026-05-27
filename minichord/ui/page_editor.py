@@ -16,6 +16,7 @@ class PageWidget(QFrame):
         self._layout = layout or PageLayout()
         self._zoom = 1.0
         self.editor = QTextEdit(self)
+        self.editor.setObjectName("pageTextEditor")
         self.editor.setFrameShape(QFrame.Shape.NoFrame)
         self.editor.setAcceptRichText(False)
         self.editor.setPlaceholderText(self.tr("Write your song here..."))
@@ -26,6 +27,13 @@ class PageWidget(QFrame):
             QFrame#pageWidget {
                 background: white;
                 border: 1px solid #c8c8c8;
+            }
+
+            QTextEdit#pageTextEditor {
+                background: white;
+                color: #202124;
+                selection-background-color: #b8d7ff;
+                selection-color: #111827;
             }
             """
         )
@@ -76,12 +84,15 @@ class PageEditor(QWidget):
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
+        self.setObjectName("pageEditor")
         self.page = PageWidget()
 
         self._scroll_area = QScrollArea()
+        self._scroll_area.setObjectName("pageScrollArea")
         self._scroll_area.setWidgetResizable(True)
 
         content = QWidget()
+        content.setObjectName("pageCanvas")
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(24, 24, 24, 24)
         content_layout.addWidget(self.page, 0, Qt.AlignmentFlag.AlignHCenter)
