@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from minichord.document.chordpro import ChordProSong, parse_chordpro
+
 
 FRONT_MATTER_DELIMITER = "---"
 
@@ -29,6 +31,10 @@ class MiniChordDocument:
             f"{text}\n"
         )
 
+    def to_chordpro_song(self) -> ChordProSong:
+        """Parse the document body as ChordPro source."""
+        return parse_chordpro(self.text)
+
     @classmethod
     def from_mchord(cls, content: str) -> "MiniChordDocument":
         """Load the subset of .mchord used by the prototype."""
@@ -43,9 +49,14 @@ class MiniChordDocument:
         metadata_block = parts[0].removeprefix(f"{FRONT_MATTER_DELIMITER}\n")
         body = parts[1].lstrip("\n")
         metadata = _parse_metadata(metadata_block)
+        parsed_song = parse_chordpro(body)
         return cls(
             text=body,
-            title=metadata.get("title", "Untitled Song") or "Untitled Song",
+            title=(
+                metadata.get("title")
+                or parsed_song.title
+                or "Untitled Song"
+            ),
             version=_parse_version(metadata.get("version")),
         )
 

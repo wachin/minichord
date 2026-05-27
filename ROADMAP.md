@@ -632,33 +632,33 @@ miniChord must support:
 
 ## 3.1 ChordPro Parser
 
-- [ ] Create ChordPro parser
-- [ ] Parse inline chords
-- [ ] Parse directives
-- [ ] Parse comments
-- [ ] Parse metadata
+- [x] Create ChordPro parser
+- [x] Parse inline chords
+- [x] Parse directives
+- [x] Parse comments
+- [x] Parse metadata
 - [ ] Parse traditional chord-over-lyrics text
 - [ ] Convert chord-over-lyrics into internal chord model
 - [ ] Preserve chord spacing from imported chord sheets
 - [ ] Detect chord lines automatically
 - [ ] Detect lyric lines automatically
-- [ ] Chord/lyric paired line model
+- [x] Chord/lyric paired line model
 
 
 ### Required Directives
 
-- [ ] {title:}
-- [ ] {subtitle:}
-- [ ] {comment:}
-- [ ] {start_of_chorus}
-- [ ] {end_of_chorus}
-- [ ] {soc}
-- [ ] {eoc}
-- [ ] {key:}
-- [ ] {tempo:}
-- [ ] {artist:}
-- [ ] {album:}
-- [ ] {capo:}
+- [x] {title:}
+- [x] {subtitle:}
+- [x] {comment:}
+- [x] {start_of_chorus}
+- [x] {end_of_chorus}
+- [x] {soc}
+- [x] {eoc}
+- [x] {key:}
+- [x] {tempo:}
+- [x] {artist:}
+- [x] {album:}
+- [x] {capo:}
 
 ---
 
@@ -1084,7 +1084,7 @@ Macros must be:
 ## Phase 3 — Columns + ChordPro
 
 - [ ] Two-column layout
-- [ ] ChordPro parser
+- [x] ChordPro parser
 - [ ] Chord rendering
 - [ ] WYSIWYG chord display
 - [ ] Song printing
