@@ -73,6 +73,42 @@ def test_parse_unclosed_or_empty_chord_marker_as_literal_text():
     assert line.chords == ()
 
 
+def test_parse_traditional_chord_over_lyrics_pair():
+    song = parse_chordpro("G    D/F#  Em\nAmazing grace")
+
+    line = song.chord_lyric_lines[0]
+
+    assert line.lyrics == "Amazing grace"
+    assert line.chord_source == "G    D/F#  Em"
+    assert line.chords == (
+        ChordToken(symbol="G", lyric_index=0, source_column=0),
+        ChordToken(symbol="D/F#", lyric_index=5, source_column=5),
+        ChordToken(symbol="Em", lyric_index=11, source_column=11),
+    )
+
+
+def test_parse_traditional_chord_line_with_bars_and_standalone_chords():
+    song = parse_chordpro("| C | G/B | Am7 | F |")
+
+    line = song.chord_lyric_lines[0]
+
+    assert line.lyrics == ""
+    assert line.chord_source == "| C | G/B | Am7 | F |"
+    assert [chord.symbol for chord in line.chords] == ["C", "G/B", "Am7", "F"]
+    assert [chord.source_column for chord in line.chords] == [2, 6, 12, 18]
+    assert [chord.lyric_index for chord in line.chords] == [0, 0, 0, 0]
+
+
+def test_parse_plain_lyrics_without_false_chord_detection():
+    song = parse_chordpro("Gloria a Dios")
+
+    line = song.chord_lyric_lines[0]
+
+    assert line.lyrics == "Gloria a Dios"
+    assert line.chords == ()
+    assert line.chord_source is None
+
+
 def test_document_can_expose_parsed_chordpro_song():
     document = MiniChordDocument(text="{title: Gracias}\n[D]Gracias")
 

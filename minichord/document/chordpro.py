@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
@@ -26,6 +27,26 @@ DIRECTIVE_ALIASES = {
     "t": "title",
 }
 
+CHORD_SYMBOL_RE = re.compile(
+    r"""
+    (?:
+        N\.C\.
+        |
+        [A-G](?:\#|b)?
+        (?:
+            maj|min|dim|aug|sus|add|m
+        )?
+        [0-9]*
+        (?:[#b][0-9]+)*
+        (?:/[A-G](?:\#|b)?)?
+    )
+    """,
+    re.VERBOSE,
+)
+
+CHORD_SEPARATORS = frozenset({"|", "||", "-", "/", ":", "::"})
+TOKEN_EDGE_PUNCTUATION = "()[]{}|,;"
+
 
 @dataclass(frozen=True, slots=True)
 class ChordToken:
@@ -33,6 +54,7 @@ class ChordToken:
 
     symbol: str
     lyric_index: int
+    source_column: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,6 +64,7 @@ class ChordLyricLine:
     lyrics: str
     chords: tuple[ChordToken, ...]
     source: str
+    chord_source: str | None = None
 
     @property
     def has_chords(self) -> bool:
@@ -102,10 +125,14 @@ def parse_chordpro(source: str) -> ChordProSong:
     normalized = source.replace("\r\n", "\n").replace("\r", "\n")
     parsed_lines: list[SongLine] = []
     metadata: dict[str, str] = {}
+    raw_lines = normalized.splitlines()
+    line_index = 0
 
-    for raw_line in normalized.splitlines():
+    while line_index < len(raw_lines):
+        raw_line = raw_lines[line_index]
         if raw_line.strip() == "":
             parsed_lines.append(BlankLine(source=raw_line))
+            line_index += 1
             continue
 
         directive = _parse_directive(raw_line)
@@ -113,9 +140,33 @@ def parse_chordpro(source: str) -> ChordProSong:
             parsed_lines.append(directive)
             if directive.is_metadata and directive.value is not None:
                 metadata[directive.canonical_name] = directive.value
+            line_index += 1
+            continue
+
+        chord_line_tokens = _traditional_chord_line_tokens(raw_line)
+        if chord_line_tokens:
+            next_line_index = line_index + 1
+            if next_line_index < len(raw_lines):
+                next_raw_line = raw_lines[next_line_index]
+                if _is_lyric_pair_candidate(next_raw_line):
+                    parsed_lines.append(
+                        _parse_traditional_chord_pair(
+                            chord_line=raw_line,
+                            lyric_line=next_raw_line,
+                            chord_tokens=chord_line_tokens,
+                        )
+                    )
+                    line_index += 2
+                    continue
+
+            parsed_lines.append(
+                _parse_standalone_chord_line(raw_line, chord_line_tokens)
+            )
+            line_index += 1
             continue
 
         parsed_lines.append(_parse_chord_lyric_line(raw_line))
+        line_index += 1
 
     return ChordProSong(
         lines=tuple(parsed_lines),
@@ -166,6 +217,109 @@ def _parse_chord_lyric_line(raw_line: str) -> ChordLyricLine:
         lyrics="".join(lyrics),
         chords=tuple(chords),
         source=raw_line,
+    )
+
+
+def _parse_traditional_chord_pair(
+    chord_line: str,
+    lyric_line: str,
+    chord_tokens: tuple[ChordToken, ...],
+) -> ChordLyricLine:
+    return ChordLyricLine(
+        lyrics=lyric_line,
+        chords=_anchor_chord_tokens_to_lyrics(chord_tokens, lyric_line),
+        source=lyric_line,
+        chord_source=chord_line,
+    )
+
+
+def _parse_standalone_chord_line(
+    chord_line: str,
+    chord_tokens: tuple[ChordToken, ...],
+) -> ChordLyricLine:
+    return ChordLyricLine(
+        lyrics="",
+        chords=_anchor_chord_tokens_to_lyrics(chord_tokens, ""),
+        source=chord_line,
+        chord_source=chord_line,
+    )
+
+
+def _anchor_chord_tokens_to_lyrics(
+    chord_tokens: tuple[ChordToken, ...],
+    lyrics: str,
+) -> tuple[ChordToken, ...]:
+    anchored_tokens = []
+    for token in chord_tokens:
+        source_column = token.source_column if token.source_column is not None else 0
+        anchored_tokens.append(
+            ChordToken(
+                symbol=token.symbol,
+                lyric_index=min(source_column, len(lyrics)),
+                source_column=source_column,
+            )
+        )
+    return tuple(anchored_tokens)
+
+
+def _traditional_chord_line_tokens(raw_line: str) -> tuple[ChordToken, ...]:
+    if raw_line.strip() == "":
+        return ()
+
+    chord_tokens: list[ChordToken] = []
+    for match in re.finditer(r"\S+", raw_line):
+        raw_token = match.group()
+        candidate, offset = _clean_chord_candidate(raw_token)
+        if _is_chord_separator(raw_token) or _is_chord_separator(candidate):
+            continue
+        if _is_chord_symbol(candidate):
+            source_column = match.start() + offset
+            chord_tokens.append(
+                ChordToken(
+                    symbol=candidate,
+                    lyric_index=source_column,
+                    source_column=source_column,
+                )
+            )
+            continue
+        return ()
+
+    return tuple(chord_tokens)
+
+
+def _clean_chord_candidate(raw_token: str) -> tuple[str, int]:
+    left_index = 0
+    right_index = len(raw_token)
+
+    while (
+        left_index < right_index
+        and raw_token[left_index] in TOKEN_EDGE_PUNCTUATION
+    ):
+        left_index += 1
+
+    while (
+        right_index > left_index
+        and raw_token[right_index - 1] in TOKEN_EDGE_PUNCTUATION
+    ):
+        right_index -= 1
+
+    return raw_token[left_index:right_index], left_index
+
+
+def _is_chord_symbol(candidate: str) -> bool:
+    return bool(CHORD_SYMBOL_RE.fullmatch(candidate))
+
+
+def _is_chord_separator(candidate: str) -> bool:
+    return candidate in CHORD_SEPARATORS
+
+
+def _is_lyric_pair_candidate(raw_line: str) -> bool:
+    return (
+        raw_line.strip() != ""
+        and _parse_directive(raw_line) is None
+        and not _traditional_chord_line_tokens(raw_line)
+        and not _parse_chord_lyric_line(raw_line).has_chords
     )
 
 

@@ -637,11 +637,11 @@ miniChord must support:
 - [x] Parse directives
 - [x] Parse comments
 - [x] Parse metadata
-- [ ] Parse traditional chord-over-lyrics text
-- [ ] Convert chord-over-lyrics into internal chord model
-- [ ] Preserve chord spacing from imported chord sheets
-- [ ] Detect chord lines automatically
-- [ ] Detect lyric lines automatically
+- [x] Parse traditional chord-over-lyrics text
+- [x] Convert chord-over-lyrics into internal chord model
+- [x] Preserve chord spacing from imported chord sheets
+- [x] Detect chord lines automatically
+- [x] Detect lyric lines automatically
 - [x] Chord/lyric paired line model
 
 
