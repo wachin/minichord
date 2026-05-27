@@ -15,7 +15,14 @@ from minichord.document.chordpro import (
 )
 
 
-RenderRowKind = Literal["blank", "chord", "comment", "lyric"]
+RenderRowKind = Literal[
+    "blank",
+    "chord",
+    "column_break",
+    "comment",
+    "lyric",
+    "page_break",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,6 +34,14 @@ class RenderRow:
     source_line_index: int
     segment_index: int = 0
 
+    @property
+    def is_control(self) -> bool:
+        return self.kind in {"column_break", "page_break"}
+
+    @property
+    def is_visible(self) -> bool:
+        return not self.is_control
+
 
 @dataclass(frozen=True, slots=True)
 class ChordProLayout:
@@ -36,16 +51,16 @@ class ChordProLayout:
 
     @property
     def line_count(self) -> int:
-        return len(self.rows)
+        return sum(1 for row in self.rows if row.is_visible)
 
     @property
     def max_row_width(self) -> int:
         if not self.rows:
             return 0
-        return max(len(row.text) for row in self.rows)
+        return max((len(row.text) for row in self.rows if row.is_visible), default=0)
 
     def to_text(self) -> str:
-        return "\n".join(row.text for row in self.rows)
+        return "\n".join(row.text for row in self.rows if row.is_visible)
 
 
 def layout_chordpro_song(
@@ -82,6 +97,17 @@ def _append_directive_rows(
     directive: ChordProDirective,
     source_line_index: int,
 ) -> None:
+    break_kind = _directive_break_kind(directive)
+    if break_kind is not None:
+        rows.append(
+            RenderRow(
+                kind=break_kind,
+                text="",
+                source_line_index=source_line_index,
+            )
+        )
+        return
+
     if directive.canonical_name != "comment":
         return
 
@@ -92,6 +118,14 @@ def _append_directive_rows(
             source_line_index=source_line_index,
         )
     )
+
+
+def _directive_break_kind(
+    directive: ChordProDirective,
+) -> Literal["column_break", "page_break"] | None:
+    if directive.canonical_name in {"column_break", "page_break"}:
+        return directive.canonical_name
+    return None
 
 
 def _append_chord_lyric_rows(

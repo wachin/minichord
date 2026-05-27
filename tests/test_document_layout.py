@@ -37,6 +37,26 @@ def test_layout_to_text_matches_renderer_output():
     assert layout.max_row_width == 13
 
 
+def test_layout_creates_non_visible_control_rows_for_breaks():
+    song = parse_chordpro("[C]One\n{column_break}\n[D]Two\n{np}\n[Em]Three")
+
+    layout = layout_chordpro_song(song)
+
+    assert [row.kind for row in layout.rows] == [
+        "chord",
+        "lyric",
+        "column_break",
+        "chord",
+        "lyric",
+        "page_break",
+        "chord",
+        "lyric",
+    ]
+    assert layout.line_count == 6
+    assert layout.max_row_width == 5
+    assert layout.to_text() == "C\nOne\nD\nTwo\nEm\nThree"
+
+
 def test_layout_exposes_wrapped_segment_indexes():
     song = parse_chordpro("[D]Gracias [A]Senor por tu amor")
 

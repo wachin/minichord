@@ -68,6 +68,40 @@ def test_paginate_flows_rows_across_columns_before_next_page():
     assert pagination.pages[1].columns[1].is_empty
 
 
+def test_paginate_honors_manual_column_break():
+    song = parse_chordpro("[C]One\n{column_break}\n[D]Two")
+    layout = layout_chordpro_song(song)
+
+    pagination = paginate_layout(layout, rows_per_column=6, column_count=2)
+
+    assert pagination.page_count == 1
+    assert pagination.pages[0].columns[0].to_text() == "C\nOne"
+    assert pagination.pages[0].columns[1].to_text() == "D\nTwo"
+    assert pagination.row_count == 4
+
+
+def test_paginate_honors_manual_page_break():
+    song = parse_chordpro("[C]One\n{page_break}\n[D]Two")
+    layout = layout_chordpro_song(song)
+
+    pagination = paginate_layout(layout, rows_per_column=6, column_count=2)
+
+    assert pagination.page_count == 2
+    assert pagination.pages[0].to_text() == "C\nOne"
+    assert pagination.pages[1].to_text() == "D\nTwo"
+    assert pagination.pages[0].columns[1].is_empty
+
+
+def test_paginate_ignores_leading_manual_page_break():
+    song = parse_chordpro("{new_page}\n[C]One")
+    layout = layout_chordpro_song(song)
+
+    pagination = paginate_layout(layout, rows_per_column=6)
+
+    assert pagination.page_count == 1
+    assert pagination.pages[0].to_text() == "C\nOne"
+
+
 def test_paginate_empty_layout_can_still_create_blank_page():
     layout = layout_chordpro_song(parse_chordpro(""))
 

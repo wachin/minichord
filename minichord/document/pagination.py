@@ -88,10 +88,20 @@ def paginate_layout(
 
     while group_index < len(row_groups) or (ensure_page and not pages):
         columns: list[RenderColumn] = []
+        page_break_requested = False
         for column_index in range(column_count):
             column_rows: list[RenderRow] = []
             while group_index < len(row_groups):
                 next_group = row_groups[group_index]
+                break_kind = _break_kind(next_group)
+                if break_kind == "page_break":
+                    group_index += 1
+                    page_break_requested = True
+                    break
+                if break_kind == "column_break":
+                    group_index += 1
+                    break
+
                 if column_rows and len(column_rows) + len(next_group) > rows_per_column:
                     break
 
@@ -106,6 +116,20 @@ def paginate_layout(
                     page_index=page_index,
                     column_index=column_index,
                     rows=tuple(column_rows),
+                )
+            )
+            if page_break_requested:
+                break
+
+        if page_break_requested and not _columns_have_rows(columns):
+            continue
+
+        while len(columns) < column_count:
+            columns.append(
+                RenderColumn(
+                    page_index=page_index,
+                    column_index=len(columns),
+                    rows=(),
                 )
             )
 
@@ -144,3 +168,17 @@ def _keep_together_row_groups(
         groups.append(tuple(current_group))
 
     return tuple(groups)
+
+
+def _break_kind(row_group: tuple[RenderRow, ...]) -> str | None:
+    if len(row_group) != 1:
+        return None
+
+    row = row_group[0]
+    if row.kind in {"column_break", "page_break"}:
+        return row.kind
+    return None
+
+
+def _columns_have_rows(columns: list[RenderColumn]) -> bool:
+    return any(column.rows for column in columns)

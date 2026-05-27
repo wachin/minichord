@@ -18,6 +18,7 @@ editor and worship songbook layout tool.
 - Structured ChordPro render rows for future page, column, and paint layout
 - Row-based pagination that flows render rows through one or more columns while
   keeping chord/lyric segments together
+- Manual page and column break directives in the structured layout engine
 
 ## Debian / MX Linux Setup
 

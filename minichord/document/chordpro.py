@@ -21,7 +21,12 @@ METADATA_DIRECTIVES = frozenset(
 )
 
 DIRECTIVE_ALIASES = {
+    "cb": "column_break",
+    "colb": "column_break",
     "eoc": "end_of_chorus",
+    "new_page": "page_break",
+    "np": "page_break",
+    "pagebreak": "page_break",
     "soc": "start_of_chorus",
     "st": "subtitle",
     "t": "title",

@@ -306,7 +306,7 @@ Changing margins MUST:
 - [x] Keep-with-next support
 - [ ] Widow/orphan control
 - [ ] Page break before paragraph
-- [ ] Manual page breaks
+- [x] Manual page breaks
 - [ ] Soft page breaks
 - [ ] Layout invalidation system
 - [ ] Incremental re-layout optimization
