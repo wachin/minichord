@@ -12,6 +12,7 @@ editor and worship songbook layout tool.
 - Save/load support for the initial text-based `.mchord` format
 - PDF export through Qt printing
 - System/light/dark application theme selection
+- Preferences dialog with live manual language selection
 - Crash-safe autosave drafts for modified documents
 - Automatic backup snapshots before overwriting saved documents
 - Document recovery discovery for autosaved drafts

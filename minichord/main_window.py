@@ -19,11 +19,19 @@ from minichord import __version__
 from minichord.autosave import DEFAULT_AUTOSAVE_INTERVAL_MS, AutosaveManager
 from minichord.backup import BackupManager
 from minichord.document import MiniChordDocument
+from minichord.i18n import install_translations
 from minichord.resources import app_icon
 from minichord.recovery import RecoveryDraft, RecoveryManager
-from minichord.settings import THEME_DARK, THEME_LIGHT, THEME_SYSTEM, SettingsManager
+from minichord.settings import (
+    DEFAULT_LANGUAGE,
+    THEME_DARK,
+    THEME_LIGHT,
+    THEME_SYSTEM,
+    SettingsManager,
+)
 from minichord.theme import apply_theme
 from minichord.ui.page_editor import PageEditor
+from minichord.ui.preferences_dialog import PreferencesDialog
 from minichord.ui.recovery_dialog import RecoveryDialog
 
 
@@ -176,6 +184,24 @@ class MainWindow(QMainWindow):
     def show_about_dialog(self) -> None:
         QMessageBox.about(self, self.tr("About miniChord"), self._about_text())
 
+    def show_preferences_dialog(self) -> None:
+        dialog = PreferencesDialog(self.settings.language(), self)
+        if dialog.exec() != PreferencesDialog.DialogCode.Accepted:
+            return
+
+        language = dialog.selected_language()
+        self.settings.set_language(language)
+        self.settings.sync()
+        app = QApplication.instance()
+        if isinstance(app, QApplication):
+            install_translations(app, language)
+        self._retranslate_ui()
+        self.statusBar().showMessage(
+            self.tr("Language changed: {language}").format(
+                language=self._language_label(language)
+            )
+        )
+
     def set_theme(self, theme: str) -> None:
         self.settings.set_theme(theme)
         self.settings.sync()
@@ -272,6 +298,9 @@ class MainWindow(QMainWindow):
         self.quit_action.setShortcut("Ctrl+Q")
         self.quit_action.triggered.connect(self.close)
 
+        self.preferences_action = QAction(self.tr("Preferences..."), self)
+        self.preferences_action.triggered.connect(self.show_preferences_dialog)
+
         self.about_action = QAction(self.tr("About miniChord"), self)
         self.about_action.triggered.connect(self.show_about_dialog)
 
@@ -292,34 +321,37 @@ class MainWindow(QMainWindow):
         )
 
     def _create_menus(self) -> None:
-        file_menu = self.menuBar().addMenu(self.tr("File"))
-        file_menu.addAction(self.new_action)
-        file_menu.addAction(self.open_action)
-        file_menu.addAction(self.save_action)
-        file_menu.addAction(self.save_as_action)
-        file_menu.addSeparator()
-        file_menu.addAction(self.export_pdf_action)
-        file_menu.addSeparator()
-        file_menu.addAction(self.quit_action)
+        self.file_menu = self.menuBar().addMenu(self.tr("File"))
+        self.file_menu.addAction(self.new_action)
+        self.file_menu.addAction(self.open_action)
+        self.file_menu.addAction(self.save_action)
+        self.file_menu.addAction(self.save_as_action)
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(self.export_pdf_action)
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(self.quit_action)
 
-        view_menu = self.menuBar().addMenu(self.tr("View"))
-        theme_menu = view_menu.addMenu(self.tr("Theme"))
-        theme_menu.addAction(self.system_theme_action)
-        theme_menu.addAction(self.light_theme_action)
-        theme_menu.addAction(self.dark_theme_action)
+        self.edit_menu = self.menuBar().addMenu(self.tr("Edit"))
+        self.edit_menu.addAction(self.preferences_action)
 
-        help_menu = self.menuBar().addMenu(self.tr("Help"))
-        help_menu.addAction(self.about_action)
+        self.view_menu = self.menuBar().addMenu(self.tr("View"))
+        self.theme_menu = self.view_menu.addMenu(self.tr("Theme"))
+        self.theme_menu.addAction(self.system_theme_action)
+        self.theme_menu.addAction(self.light_theme_action)
+        self.theme_menu.addAction(self.dark_theme_action)
+
+        self.help_menu = self.menuBar().addMenu(self.tr("Help"))
+        self.help_menu.addAction(self.about_action)
 
     def _create_toolbar(self) -> None:
-        toolbar = QToolBar(self.tr("Main Toolbar"), self)
-        toolbar.setObjectName("mainToolbar")
-        toolbar.setMovable(False)
-        toolbar.addAction(self.new_action)
-        toolbar.addAction(self.open_action)
-        toolbar.addAction(self.save_action)
-        toolbar.addAction(self.export_pdf_action)
-        self.addToolBar(toolbar)
+        self.toolbar = QToolBar(self.tr("Main Toolbar"), self)
+        self.toolbar.setObjectName("mainToolbar")
+        self.toolbar.setMovable(False)
+        self.toolbar.addAction(self.new_action)
+        self.toolbar.addAction(self.open_action)
+        self.toolbar.addAction(self.save_action)
+        self.toolbar.addAction(self.export_pdf_action)
+        self.addToolBar(self.toolbar)
 
     def _file_dialog_directory(self) -> str:
         directory = self.settings.last_directory()
@@ -352,6 +384,39 @@ class MainWindow(QMainWindow):
             THEME_DARK: self.tr("Dark"),
         }
         return labels.get(theme, labels[THEME_SYSTEM])
+
+    def _language_label(self, language: str) -> str:
+        labels = {
+            DEFAULT_LANGUAGE: self.tr("System default"),
+            "en": self.tr("English"),
+            "es": self.tr("Spanish"),
+        }
+        return labels.get(language, language)
+
+    def _retranslate_ui(self) -> None:
+        self.new_action.setText(self.tr("New"))
+        self.open_action.setText(self.tr("Open..."))
+        self.save_action.setText(self.tr("Save"))
+        self.save_as_action.setText(self.tr("Save As..."))
+        self.export_pdf_action.setText(self.tr("Export PDF..."))
+        self.quit_action.setText(self.tr("Quit"))
+        self.preferences_action.setText(self.tr("Preferences..."))
+        self.about_action.setText(self.tr("About miniChord"))
+        self.system_theme_action.setText(self.tr("System"))
+        self.light_theme_action.setText(self.tr("Light"))
+        self.dark_theme_action.setText(self.tr("Dark"))
+
+        self.file_menu.setTitle(self.tr("File"))
+        self.edit_menu.setTitle(self.tr("Edit"))
+        self.view_menu.setTitle(self.tr("View"))
+        self.theme_menu.setTitle(self.tr("Theme"))
+        self.help_menu.setTitle(self.tr("Help"))
+        self.toolbar.setWindowTitle(self.tr("Main Toolbar"))
+
+        if self.current_path is None:
+            self.setWindowTitle(self.tr("miniChord - Untitled"))
+        else:
+            self.setWindowTitle(self.tr("miniChord - {name}").format(name=self.current_path.name))
 
     def _schedule_autosave(self) -> None:
         if self._autosave_suspended:

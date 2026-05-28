@@ -8,6 +8,7 @@ from minichord.app import build_application
 from minichord.autosave import AutosaveManager
 from minichord.backup import BackupManager
 from minichord.document import MiniChordDocument
+from minichord.i18n import install_translations
 import minichord.main_window as main_window_module
 from minichord.main_window import MainWindow
 from minichord.recovery import RecoveryManager
@@ -160,6 +161,16 @@ def test_main_window_exposes_theme_menu(qtbot, tmp_path):
     assert app.property(CURRENT_THEME_PROPERTY) == THEME_DARK
 
 
+def test_main_window_exposes_preferences_action(qtbot, tmp_path):
+    window = MainWindow(settings=temporary_settings(tmp_path))
+    qtbot.addWidget(window)
+
+    menu_titles = [action.text() for action in window.menuBar().actions()]
+
+    assert "Edit" in menu_titles
+    assert window.preferences_action.text() == "Preferences..."
+
+
 def test_about_dialog_shows_version_and_toolkit_details(qtbot, monkeypatch, tmp_path):
     captured = {}
 
@@ -181,6 +192,40 @@ def test_about_dialog_shows_version_and_toolkit_details(qtbot, monkeypatch, tmp_
     assert f"miniChord {__version__}" in captured["text"]
     assert "Qt:" in captured["text"]
     assert "PyQt:" in captured["text"]
+
+
+def test_preferences_dialog_persists_selected_language(qtbot, monkeypatch, tmp_path):
+    settings = temporary_settings(tmp_path)
+
+    class FakePreferencesDialog:
+        class DialogCode:
+            Accepted = 1
+
+        def __init__(self, language, parent):
+            self.language = language
+            self.parent = parent
+
+        def exec(self):
+            return self.DialogCode.Accepted
+
+        def selected_language(self):
+            return "es"
+
+    monkeypatch.setattr(main_window_module, "PreferencesDialog", FakePreferencesDialog)
+    window = MainWindow(settings=settings)
+    qtbot.addWidget(window)
+
+    app = QApplication.instance()
+    try:
+        window.show_preferences_dialog()
+        reloaded = temporary_settings(tmp_path)
+
+        assert reloaded.language() == "es"
+        assert window.preferences_action.text() == "Preferencias..."
+        assert window.statusBar().currentMessage() == "Idioma cambiado: Español"
+    finally:
+        if app is not None:
+            install_translations(app, "en")
 
 
 def test_main_window_saves_mchord_file(qtbot, tmp_path):

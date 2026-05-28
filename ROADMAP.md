@@ -142,9 +142,9 @@ The application must use:
 - [x] Compile `.ts` files into `.qm` files using `lrelease`
 - [x] Load `.qm` files at startup using `QTranslator`
 - [x] Detect system language using `QLocale`
-- [ ] Allow manual language selection in Preferences
+- [x] Allow manual language selection in Preferences
 - [x] Save selected language in settings
-- [ ] Restart or reload UI after language change
+- [x] Restart or reload UI after language change
 - [x] Use `qt6-translations-l10n` for native Qt dialogs on Linux
 - [x] Document the translation workflow in README
 
