@@ -99,6 +99,26 @@ def test_document_model_drives_existing_render_pipeline():
     ]
 
 
+def test_document_model_can_paginate_from_page_geometry():
+    model = DocumentModel(body_text="[C]One\n[D]Two")
+
+    pagination = model.to_page_paginated_layout(line_height_mm=100.0)
+
+    assert pagination.rows_per_column == 2
+    assert [page.to_text() for page in pagination.pages] == [
+        "C\nOne",
+        "D\nTwo",
+    ]
+
+
+def test_document_model_page_pagination_reacts_to_orientation():
+    model = DocumentModel(body_text="[C]One")
+    landscape = model.with_page_layout(0, PageLayout(orientation="landscape"))
+
+    assert model.to_page_paginated_layout(line_height_mm=10.0).rows_per_column == 25
+    assert landscape.to_page_paginated_layout(line_height_mm=10.0).rows_per_column == 17
+
+
 def test_document_model_replaces_page_layout_immutably():
     model = DocumentModel()
     landscape = PageLayout(orientation="landscape")

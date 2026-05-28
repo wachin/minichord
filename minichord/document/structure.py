@@ -10,7 +10,7 @@ from minichord.document.dom import DocumentDom
 from minichord.document.layout import ChordProLayout
 from minichord.document.model import MiniChordDocument
 from minichord.document.pagination import PaginatedLayout
-from minichord.document.page import PageLayout
+from minichord.document.page import DEFAULT_TEXT_LINE_HEIGHT_MM, PageLayout
 
 
 DEFAULT_PAGE_ID = "page-1"
@@ -102,6 +102,25 @@ class DocumentModel:
     ) -> PaginatedLayout:
         """Build a row-based paginated layout for the document body."""
         return self.to_document().to_paginated_layout(
+            rows_per_column=rows_per_column,
+            column_count=column_count,
+            max_width=max_width,
+        )
+
+    def to_page_paginated_layout(
+        self,
+        page_index: int = 0,
+        line_height_mm: float = DEFAULT_TEXT_LINE_HEIGHT_MM,
+        column_count: int = 1,
+        max_width: int | None = None,
+    ) -> PaginatedLayout:
+        """Paginate using row capacity derived from a document page layout."""
+        page = self.page(page_index)
+        rows_per_column = page.layout.rows_per_column(
+            line_height_mm=line_height_mm,
+            page_number=page_index + 1,
+        )
+        return self.to_paginated_layout(
             rows_per_column=rows_per_column,
             column_count=column_count,
             max_width=max_width,

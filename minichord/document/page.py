@@ -9,6 +9,7 @@ from typing import Literal
 
 MM_PER_INCH = 25.4
 DEFAULT_SCREEN_DPI = 96.0
+DEFAULT_TEXT_LINE_HEIGHT_MM = 4.2
 
 PAGE_SIZES_MM: dict[str, tuple[float, float]] = {
     "A4": (210.0, 297.0),
@@ -118,6 +119,7 @@ class PageLayout:
     orientation: str = "portrait"
     margins: PageMargins = PageMargins()
     custom_size_mm: tuple[float, float] | None = None
+    printer_margins: PageMargins = PageMargins(0.0, 0.0, 0.0, 0.0)
 
     @property
     def size_mm(self) -> tuple[float, float]:
@@ -154,11 +156,21 @@ class PageLayout:
     def writable_size_mm(self) -> tuple[float, float]:
         return self.writable_size_for_page_mm()
 
+    @property
+    def printable_size_mm(self) -> tuple[float, float]:
+        return self.printable_size_for_page_mm()
+
     def effective_margins(self, page_number: int = 1) -> PageMargins:
         """Return margins after applying page-number-dependent rules."""
         width, height = self.size_mm
         self.margins.validate_for(width, height, page_number)
         return self.margins.effective_for_page(page_number)
+
+    def effective_printer_margins(self, page_number: int = 1) -> PageMargins:
+        """Return printer margins after applying page-number-dependent rules."""
+        width, height = self.size_mm
+        self.printer_margins.validate_for(width, height, page_number)
+        return self.printer_margins.effective_for_page(page_number)
 
     def writable_size_for_page_mm(
         self,
@@ -170,6 +182,28 @@ class PageLayout:
             width - margins.left - margins.right,
             height - margins.top - margins.bottom,
         )
+
+    def printable_size_for_page_mm(
+        self,
+        page_number: int = 1,
+    ) -> tuple[float, float]:
+        width, height = self.size_mm
+        printer_margins = self.effective_printer_margins(page_number)
+        return (
+            width - printer_margins.left - printer_margins.right,
+            height - printer_margins.top - printer_margins.bottom,
+        )
+
+    def rows_per_column(
+        self,
+        line_height_mm: float = DEFAULT_TEXT_LINE_HEIGHT_MM,
+        page_number: int = 1,
+    ) -> int:
+        """Return how many text rows fit in the writable page height."""
+        if line_height_mm <= 0:
+            raise ValueError("Line height must be positive.")
+        _, writable_height = self.writable_size_for_page_mm(page_number)
+        return max(1, int(writable_height // line_height_mm))
 
     def page_size_px(
         self,
@@ -191,6 +225,32 @@ class PageLayout:
             mm_to_px(margins.top, dpi, zoom),
             mm_to_px(margins.right, dpi, zoom),
             mm_to_px(margins.bottom, dpi, zoom),
+        )
+
+    def printer_margin_px(
+        self,
+        dpi: float = DEFAULT_SCREEN_DPI,
+        zoom: float = 1.0,
+        page_number: int = 1,
+    ) -> tuple[int, int, int, int]:
+        printer_margins = self.effective_printer_margins(page_number)
+        return (
+            mm_to_px(printer_margins.left, dpi, zoom),
+            mm_to_px(printer_margins.top, dpi, zoom),
+            mm_to_px(printer_margins.right, dpi, zoom),
+            mm_to_px(printer_margins.bottom, dpi, zoom),
+        )
+
+    def has_printer_safe_area(self, page_number: int = 1) -> bool:
+        printer_margins = self.effective_printer_margins(page_number)
+        return any(
+            margin > 0
+            for margin in (
+                printer_margins.left,
+                printer_margins.top,
+                printer_margins.right,
+                printer_margins.bottom,
+            )
         )
 
 

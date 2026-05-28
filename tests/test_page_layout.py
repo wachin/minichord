@@ -112,6 +112,60 @@ def test_layout_writable_size_can_use_page_number_dependent_margins():
     )
 
 
+def test_layout_printable_size_uses_printer_safe_area():
+    layout = PageLayout(
+        printer_margins=PageMargins(left=4.0, top=5.0, right=6.0, bottom=7.0)
+    )
+
+    assert layout.printable_size_mm == (200.0, 285.0)
+    assert layout.has_printer_safe_area()
+    assert layout.printer_margin_px() == (
+        mm_to_px(4.0),
+        mm_to_px(5.0),
+        mm_to_px(6.0),
+        mm_to_px(7.0),
+    )
+
+
+def test_rows_per_column_uses_writable_height():
+    layout = PageLayout(margins=PageMargins(top=10.0, bottom=20.0))
+
+    assert layout.rows_per_column(line_height_mm=10.0) == 26
+
+
+def test_rows_per_column_changes_after_orientation_switch():
+    portrait = PageLayout(margins=PageMargins(top=20.0, bottom=20.0))
+    landscape = PageLayout(
+        orientation="landscape",
+        margins=PageMargins(top=20.0, bottom=20.0),
+    )
+
+    assert portrait.rows_per_column(line_height_mm=10.0) == 25
+    assert landscape.rows_per_column(line_height_mm=10.0) == 17
+
+
+def test_rows_per_column_has_minimum_and_validates_line_height():
+    layout = PageLayout()
+
+    assert layout.rows_per_column(line_height_mm=1000.0) == 1
+    with pytest.raises(ValueError, match="Line height"):
+        layout.rows_per_column(line_height_mm=0.0)
+
+
+def test_layout_without_printer_margins_has_no_safe_area():
+    layout = PageLayout()
+
+    assert layout.printable_size_mm == layout.size_mm
+    assert not layout.has_printer_safe_area()
+
+
+def test_printer_safe_area_validates_page_geometry():
+    layout = PageLayout(printer_margins=PageMargins(left=120.0, right=120.0))
+
+    with pytest.raises(ValueError, match="Horizontal"):
+        layout.printable_size_mm
+
+
 def test_margin_spacing_fields_are_validated():
     layout = PageLayout(margins=PageMargins(header_spacing=-1.0))
 

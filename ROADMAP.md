@@ -214,8 +214,8 @@ It MUST render:
 
 ### Rendering Features
 
-- [ ] Printer safe area handling
-- [ ] Non-printable margin visualization
+- [x] Printer safe area handling
+- [x] Non-printable margin visualization
 
 
 ### Required Page Features
@@ -229,8 +229,8 @@ It MUST render:
 - [x] Dynamic page resizing
 - [x] Page background rendering
 - [x] Page shadow rendering
-- [ ] Multi-page vertical view
-- [ ] Continuous page scrolling
+- [x] Multi-page vertical view
+- [x] Continuous page scrolling
 - [ ] Print preview mode
 
 ### Orientation Behavior
@@ -241,9 +241,9 @@ It MUST render:
 - [x] Margin recalculation after orientation changes
 - [ ] Header/footer repositioning after orientation changes
 - [ ] Landscape-aware print preview
-- [ ] Mixed orientations inside the same document
+- [x] Mixed orientations inside the same document
 - [ ] Section-based page orientation
-- [ ] Orientation-aware pagination
+- [x] Orientation-aware pagination
 - [ ] Orientation-aware rulers
 
 ### Page Templates

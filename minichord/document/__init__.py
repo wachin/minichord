@@ -32,6 +32,7 @@ from minichord.document.pagination import (
 )
 from minichord.document.page import (
     CUSTOM_PAGE_SIZE,
+    DEFAULT_TEXT_LINE_HEIGHT_MM,
     MARGIN_PRESETS_MM,
     MarginPresetName,
     PageLayout,
@@ -49,6 +50,7 @@ __all__ = [
     "ChordProSong",
     "ChordToken",
     "CUSTOM_PAGE_SIZE",
+    "DEFAULT_TEXT_LINE_HEIGHT_MM",
     "DocumentBlock",
     "DocumentDom",
     "DocumentModel",

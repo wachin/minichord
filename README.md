@@ -15,6 +15,9 @@ editor and worship songbook layout tool.
 - A4, Letter, Legal, portrait/landscape, and custom page geometry support
 - Dynamic page and writable-frame resizing when layout or zoom changes
 - Physical page background, border, and shadow rendering
+- Multi-page vertical view with continuous scrolling and mixed orientations
+- Printer safe-area geometry with non-printable margin visualization
+- Page-geometry-derived row capacity for orientation-aware pagination
 - Internal semantic document DOM with song and paragraph blocks
 - Save/load support for the initial text-based `.mchord` format
 - PDF export through Qt printing
