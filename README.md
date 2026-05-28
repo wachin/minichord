@@ -9,6 +9,8 @@ editor and worship songbook layout tool.
 - A visible A4 page editing surface
 - Basic text editing through Qt
 - Page margins in the editor surface
+- Page-based document/page model abstraction for future layout engine work
+- Internal semantic document DOM with song and paragraph blocks
 - Save/load support for the initial text-based `.mchord` format
 - PDF export through Qt printing
 - System/light/dark application theme selection
@@ -26,6 +28,7 @@ editor and worship songbook layout tool.
 - Monospaced chord-over-lyrics renderer with basic chord collision avoidance
 - Chord-aware renderer wrapping for narrow columns and future pagination
 - Structured ChordPro render rows for future page, column, and paint layout
+- Semantic song sections for explicit verse, chorus, and bridge markers
 - Row-based pagination that flows render rows through one or more columns while
   keeping chord/lyric segments together
 - Manual page and column break directives in the structured layout engine

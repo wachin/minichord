@@ -6,6 +6,7 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
+from typing import Literal
 
 
 METADATA_DIRECTIVES = frozenset(
@@ -23,11 +24,15 @@ METADATA_DIRECTIVES = frozenset(
 DIRECTIVE_ALIASES = {
     "cb": "column_break",
     "colb": "column_break",
+    "eob": "end_of_bridge",
     "eoc": "end_of_chorus",
+    "eov": "end_of_verse",
     "new_page": "page_break",
     "np": "page_break",
     "pagebreak": "page_break",
+    "sob": "start_of_bridge",
     "soc": "start_of_chorus",
+    "sov": "start_of_verse",
     "st": "subtitle",
     "t": "title",
 }
@@ -101,6 +106,48 @@ class BlankLine:
 
 
 SongLine = ChordProDirective | ChordLyricLine | BlankLine
+SongSectionKind = Literal["bridge", "chorus", "unknown", "verse"]
+SECTION_START_DIRECTIVES: Mapping[str, SongSectionKind] = MappingProxyType(
+    {
+        "start_of_bridge": "bridge",
+        "start_of_chorus": "chorus",
+        "start_of_verse": "verse",
+    }
+)
+SECTION_END_DIRECTIVES: Mapping[str, SongSectionKind] = MappingProxyType(
+    {
+        "end_of_bridge": "bridge",
+        "end_of_chorus": "chorus",
+        "end_of_verse": "verse",
+    }
+)
+
+
+@dataclass(frozen=True, slots=True)
+class SongSection:
+    """A semantic group of song lines such as a verse, chorus, or bridge."""
+
+    kind: SongSectionKind
+    label: str
+    lines: tuple[SongLine, ...]
+    start_line_index: int
+    end_line_index: int
+
+    @property
+    def line_count(self) -> int:
+        return len(self.lines)
+
+    @property
+    def chord_lyric_lines(self) -> tuple[ChordLyricLine, ...]:
+        return tuple(
+            line for line in self.lines if isinstance(line, ChordLyricLine)
+        )
+
+    def to_source(self) -> str:
+        source_lines: list[str] = []
+        for line in self.lines:
+            source_lines.extend(source_lines_for_song_line(line))
+        return "\n".join(source_lines)
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,7 +169,68 @@ class ChordProSong:
 
     @property
     def chord_lyric_lines(self) -> tuple[ChordLyricLine, ...]:
-        return tuple(line for line in self.lines if isinstance(line, ChordLyricLine))
+        return tuple(
+            line for line in self.lines if isinstance(line, ChordLyricLine)
+        )
+
+    @property
+    def sections(self) -> tuple[SongSection, ...]:
+        return build_song_sections(self.lines)
+
+
+def build_song_sections(lines: tuple[SongLine, ...]) -> tuple[SongSection, ...]:
+    """Build semantic song sections from explicit ChordPro section markers."""
+    sections: list[SongSection] = []
+    current_kind: SongSectionKind = "unknown"
+    current_label = ""
+    current_lines: list[SongLine] = []
+    current_start_line_index = 0
+
+    for line_index, line in enumerate(lines):
+        section_start = _section_start_kind(line)
+        if section_start is not None:
+            _append_song_section(
+                sections,
+                current_kind,
+                current_label,
+                current_lines,
+                current_start_line_index,
+                line_index - 1,
+            )
+            current_kind = section_start
+            current_label = _section_label(line, section_start)
+            current_lines = []
+            current_start_line_index = line_index + 1
+            continue
+
+        section_end = _section_end_kind(line)
+        if section_end is not None:
+            _append_song_section(
+                sections,
+                current_kind,
+                current_label,
+                current_lines,
+                current_start_line_index,
+                line_index - 1,
+                include_empty=current_kind == section_end,
+            )
+            current_kind = "unknown"
+            current_label = ""
+            current_lines = []
+            current_start_line_index = line_index + 1
+            continue
+
+        current_lines.append(line)
+
+    _append_song_section(
+        sections,
+        current_kind,
+        current_label,
+        current_lines,
+        current_start_line_index,
+        len(lines) - 1,
+    )
+    return tuple(sections)
 
 
 def render_chord_over_lyrics(
@@ -462,6 +570,57 @@ def _render_directive_text(directive: ChordProDirective) -> str | None:
     if directive.canonical_name == "comment":
         return directive.value or ""
     return None
+
+
+def source_lines_for_song_line(song_line: SongLine) -> tuple[str, ...]:
+    """Return source lines for a parsed ChordPro song line."""
+    if isinstance(song_line, ChordLyricLine) and song_line.chord_source is not None:
+        if song_line.chord_source != song_line.source:
+            return song_line.chord_source, song_line.source
+    return (song_line.source,)
+
+
+def _append_song_section(
+    sections: list[SongSection],
+    kind: SongSectionKind,
+    label: str,
+    lines: list[SongLine],
+    start_line_index: int,
+    end_line_index: int,
+    include_empty: bool = False,
+) -> None:
+    if not lines and not include_empty:
+        return
+    sections.append(
+        SongSection(
+            kind=kind,
+            label=label,
+            lines=tuple(lines),
+            start_line_index=start_line_index,
+            end_line_index=max(start_line_index, end_line_index),
+        )
+    )
+
+
+def _section_start_kind(song_line: SongLine) -> SongSectionKind | None:
+    if not isinstance(song_line, ChordProDirective):
+        return None
+    return SECTION_START_DIRECTIVES.get(song_line.canonical_name)
+
+
+def _section_end_kind(song_line: SongLine) -> SongSectionKind | None:
+    if not isinstance(song_line, ChordProDirective):
+        return None
+    return SECTION_END_DIRECTIVES.get(song_line.canonical_name)
+
+
+def _section_label(
+    song_line: SongLine,
+    kind: SongSectionKind,
+) -> str:
+    if isinstance(song_line, ChordProDirective) and song_line.value:
+        return song_line.value
+    return kind.title()
 
 
 def _chord_render_column(chord: ChordToken) -> int:

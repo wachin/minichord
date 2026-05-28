@@ -177,25 +177,25 @@ translations/
 
 ## 1.1 Core Architecture
 
-- [ ] Create custom page-based document engine
-- [ ] Create document model abstraction
-- [ ] Create page model abstraction
+- [x] Create custom page-based document engine
+- [x] Create document model abstraction
+- [x] Create page model abstraction
 - [x] Create layout engine abstraction
 - [x] Create pagination engine
 - [x] Create render pipeline
 - [x] Separate rendering from editing logic
-- [ ] Separate visual layout from storage format
-- [ ] Internal document object model (DOM)
-- [ ] Song block abstraction
-- [ ] Paragraph abstraction
+- [x] Separate visual layout from storage format
+- [x] Internal document object model (DOM)
+- [x] Song block abstraction
+- [x] Paragraph abstraction
 - [x] Chord line abstraction
 - [x] Layout tree abstraction
-- [ ] Internal song model
-- [ ] Song section abstraction
-- [ ] Verse abstraction
-- [ ] Chorus abstraction
-- [ ] Bridge abstraction
-- [ ] Chord token abstraction
+- [x] Internal song model
+- [x] Song section abstraction
+- [x] Verse abstraction
+- [x] Chorus abstraction
+- [x] Bridge abstraction
+- [x] Chord token abstraction
 - [ ] Lyric syllable abstraction
 
 ---
