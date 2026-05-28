@@ -3,7 +3,15 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import QSize, Qt
-from PyQt6.QtWidgets import QFrame, QScrollArea, QTextEdit, QVBoxLayout, QWidget
+from PyQt6.QtGui import QColor
+from PyQt6.QtWidgets import (
+    QFrame,
+    QGraphicsDropShadowEffect,
+    QScrollArea,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 from minichord.document.page import DEFAULT_SCREEN_DPI, PageLayout
 
@@ -11,7 +19,11 @@ from minichord.document.page import DEFAULT_SCREEN_DPI, PageLayout
 class PageWidget(QFrame):
     """Visual page frame with a writable text area inside the margins."""
 
-    def __init__(self, layout: PageLayout | None = None, parent: QWidget | None = None):
+    def __init__(
+        self,
+        layout: PageLayout | None = None,
+        parent: QWidget | None = None,
+    ):
         super().__init__(parent)
         self._layout = layout or PageLayout()
         self._zoom = 1.0
@@ -37,6 +49,11 @@ class PageWidget(QFrame):
             }
             """
         )
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(18.0)
+        shadow.setOffset(0.0, 4.0)
+        shadow.setColor(QColor(0, 0, 0, 55))
+        self.setGraphicsEffect(shadow)
         self._apply_layout()
 
     def page_layout(self) -> PageLayout:
@@ -49,6 +66,9 @@ class PageWidget(QFrame):
     def set_zoom(self, zoom: float) -> None:
         self._zoom = max(0.25, min(zoom, 4.0))
         self._apply_layout()
+
+    def zoom(self) -> float:
+        return self._zoom
 
     def text(self) -> str:
         return self.editor.toPlainText()
@@ -67,10 +87,14 @@ class PageWidget(QFrame):
     def _apply_layout(self) -> None:
         width, height = self._layout.page_size_px(DEFAULT_SCREEN_DPI, self._zoom)
         self.setFixedSize(width, height)
+        self.updateGeometry()
         self._place_editor()
 
     def _place_editor(self) -> None:
-        left, top, right, bottom = self._layout.margin_px(DEFAULT_SCREEN_DPI, self._zoom)
+        left, top, right, bottom = self._layout.margin_px(
+            DEFAULT_SCREEN_DPI,
+            self._zoom,
+        )
         self.editor.setGeometry(
             left,
             top,
@@ -111,3 +135,15 @@ class PageEditor(QWidget):
 
     def text_document(self):
         return self.page.editor.document()
+
+    def page_layout(self) -> PageLayout:
+        return self.page.page_layout()
+
+    def set_page_layout(self, layout: PageLayout) -> None:
+        self.page.set_page_layout(layout)
+
+    def zoom(self) -> float:
+        return self.page.zoom()
+
+    def set_zoom(self, zoom: float) -> None:
+        self.page.set_zoom(zoom)

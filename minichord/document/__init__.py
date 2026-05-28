@@ -6,8 +6,10 @@ from minichord.document.chordpro import (
     ChordProDirective,
     ChordProSong,
     ChordToken,
+    LyricSyllable,
     SongSection,
     SongSectionKind,
+    build_lyric_syllables,
     build_song_sections,
     parse_chordpro,
     render_chord_line,
@@ -28,7 +30,14 @@ from minichord.document.pagination import (
     RenderPage,
     paginate_layout,
 )
-from minichord.document.page import PageLayout, PageMargins
+from minichord.document.page import (
+    CUSTOM_PAGE_SIZE,
+    MARGIN_PRESETS_MM,
+    MarginPresetName,
+    PageLayout,
+    PageMargins,
+    margin_preset_names,
+)
 from minichord.document.songbook import MiniChordSongbook
 from minichord.document.structure import DocumentModel, DocumentPage
 
@@ -39,12 +48,15 @@ __all__ = [
     "ChordProLayout",
     "ChordProSong",
     "ChordToken",
+    "CUSTOM_PAGE_SIZE",
     "DocumentBlock",
     "DocumentDom",
     "DocumentModel",
     "DocumentPage",
     "MiniChordDocument",
     "MiniChordSongbook",
+    "MARGIN_PRESETS_MM",
+    "MarginPresetName",
     "ParagraphBlock",
     "PaginatedLayout",
     "PageLayout",
@@ -52,11 +64,14 @@ __all__ = [
     "RenderColumn",
     "RenderPage",
     "RenderRow",
+    "LyricSyllable",
     "SongBlock",
     "SongSection",
     "SongSectionKind",
+    "build_lyric_syllables",
     "build_song_sections",
     "layout_chordpro_song",
+    "margin_preset_names",
     "paginate_layout",
     "parse_chordpro",
     "render_chord_line",

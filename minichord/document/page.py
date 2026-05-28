@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from types import MappingProxyType
+from typing import Literal
 
 
 MM_PER_INCH = 25.4
@@ -13,6 +15,8 @@ PAGE_SIZES_MM: dict[str, tuple[float, float]] = {
     "Letter": (215.9, 279.4),
     "Legal": (215.9, 355.6),
 }
+CUSTOM_PAGE_SIZE = "Custom"
+MarginPresetName = Literal["normal", "narrow", "moderate", "wide", "mirrored"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,14 +27,87 @@ class PageMargins:
     top: float = 20.0
     right: float = 20.0
     bottom: float = 20.0
+    gutter: float = 0.0
+    header_spacing: float = 0.0
+    footer_spacing: float = 0.0
+    mirrored: bool = False
 
-    def validate_for(self, width_mm: float, height_mm: float) -> None:
-        if min(self.left, self.top, self.right, self.bottom) < 0:
+    @classmethod
+    def from_preset(cls, preset_name: str) -> "PageMargins":
+        """Build margins from a named preset."""
+        normalized_name = _normalize_margin_preset_name(preset_name)
+        try:
+            return MARGIN_PRESETS_MM[normalized_name]
+        except KeyError as exc:
+            raise ValueError(f"Unsupported margin preset: {preset_name}") from exc
+
+    def effective_for_page(self, page_number: int = 1) -> "PageMargins":
+        """Return margins after applying mirror and gutter rules."""
+        _validate_page_number(page_number)
+        left = self.left
+        right = self.right
+        if self.mirrored and page_number % 2 == 0:
+            left, right = right, left
+
+        if self.mirrored and page_number % 2 == 0:
+            right += self.gutter
+        else:
+            left += self.gutter
+
+        return replace(
+            self,
+            left=left,
+            right=right,
+            gutter=0.0,
+            mirrored=False,
+        )
+
+    def validate_for(
+        self,
+        width_mm: float,
+        height_mm: float,
+        page_number: int = 1,
+    ) -> None:
+        effective_margins = self.effective_for_page(page_number)
+        if (
+            min(
+                effective_margins.left,
+                effective_margins.top,
+                effective_margins.right,
+                effective_margins.bottom,
+                self.gutter,
+                self.header_spacing,
+                self.footer_spacing,
+            )
+            < 0
+        ):
             raise ValueError("Page margins cannot be negative.")
-        if self.left + self.right >= width_mm:
+        if effective_margins.left + effective_margins.right >= width_mm:
             raise ValueError("Horizontal margins leave no writable page area.")
-        if self.top + self.bottom >= height_mm:
+        if effective_margins.top + effective_margins.bottom >= height_mm:
             raise ValueError("Vertical margins leave no writable page area.")
+
+
+MARGIN_PRESETS_MM: MappingProxyType[str, PageMargins] = MappingProxyType(
+    {
+        "normal": PageMargins(left=20.0, top=20.0, right=20.0, bottom=20.0),
+        "narrow": PageMargins(left=12.7, top=12.7, right=12.7, bottom=12.7),
+        "moderate": PageMargins(left=19.1, top=25.4, right=19.1, bottom=25.4),
+        "wide": PageMargins(left=25.4, top=25.4, right=25.4, bottom=25.4),
+        "mirrored": PageMargins(
+            left=25.0,
+            top=20.0,
+            right=20.0,
+            bottom=20.0,
+            mirrored=True,
+        ),
+    }
+)
+
+
+def margin_preset_names() -> tuple[str, ...]:
+    """Return supported margin preset names."""
+    return tuple(MARGIN_PRESETS_MM.keys())
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,13 +117,11 @@ class PageLayout:
     page_size: str = "A4"
     orientation: str = "portrait"
     margins: PageMargins = PageMargins()
+    custom_size_mm: tuple[float, float] | None = None
 
     @property
     def size_mm(self) -> tuple[float, float]:
-        try:
-            width, height = PAGE_SIZES_MM[self.page_size]
-        except KeyError as exc:
-            raise ValueError(f"Unsupported page size: {self.page_size}") from exc
+        width, height = self._base_size_mm()
 
         if self.orientation == "portrait":
             return width, height
@@ -54,13 +129,46 @@ class PageLayout:
             return height, width
         raise ValueError(f"Unsupported orientation: {self.orientation}")
 
+    def _base_size_mm(self) -> tuple[float, float]:
+        if self.page_size == CUSTOM_PAGE_SIZE:
+            if self.custom_size_mm is None:
+                raise ValueError("Custom page size requires dimensions.")
+            width, height = self.custom_size_mm
+            if width <= 0 or height <= 0:
+                raise ValueError("Custom page dimensions must be positive.")
+            return width, height
+
+        if self.custom_size_mm is not None:
+            raise ValueError("Custom dimensions require Custom page size.")
+
+        try:
+            return PAGE_SIZES_MM[self.page_size]
+        except KeyError as exc:
+            raise ValueError(f"Unsupported page size: {self.page_size}") from exc
+
+    def with_margin_preset(self, preset_name: str) -> "PageLayout":
+        """Return a copy with margins from a named preset."""
+        return replace(self, margins=PageMargins.from_preset(preset_name))
+
     @property
     def writable_size_mm(self) -> tuple[float, float]:
+        return self.writable_size_for_page_mm()
+
+    def effective_margins(self, page_number: int = 1) -> PageMargins:
+        """Return margins after applying page-number-dependent rules."""
         width, height = self.size_mm
-        self.margins.validate_for(width, height)
+        self.margins.validate_for(width, height, page_number)
+        return self.margins.effective_for_page(page_number)
+
+    def writable_size_for_page_mm(
+        self,
+        page_number: int = 1,
+    ) -> tuple[float, float]:
+        width, height = self.size_mm
+        margins = self.effective_margins(page_number)
         return (
-            width - self.margins.left - self.margins.right,
-            height - self.margins.top - self.margins.bottom,
+            width - margins.left - margins.right,
+            height - margins.top - margins.bottom,
         )
 
     def page_size_px(
@@ -75,16 +183,26 @@ class PageLayout:
         self,
         dpi: float = DEFAULT_SCREEN_DPI,
         zoom: float = 1.0,
+        page_number: int = 1,
     ) -> tuple[int, int, int, int]:
-        self.writable_size_mm
+        margins = self.effective_margins(page_number)
         return (
-            mm_to_px(self.margins.left, dpi, zoom),
-            mm_to_px(self.margins.top, dpi, zoom),
-            mm_to_px(self.margins.right, dpi, zoom),
-            mm_to_px(self.margins.bottom, dpi, zoom),
+            mm_to_px(margins.left, dpi, zoom),
+            mm_to_px(margins.top, dpi, zoom),
+            mm_to_px(margins.right, dpi, zoom),
+            mm_to_px(margins.bottom, dpi, zoom),
         )
 
 
 def mm_to_px(mm: float, dpi: float = DEFAULT_SCREEN_DPI, zoom: float = 1.0) -> int:
     """Convert millimeters to device-independent pixels."""
     return round((mm / MM_PER_INCH) * dpi * zoom)
+
+
+def _normalize_margin_preset_name(preset_name: str) -> str:
+    return preset_name.strip().lower()
+
+
+def _validate_page_number(page_number: int) -> None:
+    if page_number < 1:
+        raise ValueError("Page number must be at least 1.")

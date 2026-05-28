@@ -9,7 +9,12 @@ editor and worship songbook layout tool.
 - A visible A4 page editing surface
 - Basic text editing through Qt
 - Page margins in the editor surface
+- Named margin presets for normal, narrow, moderate, wide, and mirrored layouts
+- Mirror margins, gutter margin, and header/footer spacing geometry
 - Page-based document/page model abstraction for future layout engine work
+- A4, Letter, Legal, portrait/landscape, and custom page geometry support
+- Dynamic page and writable-frame resizing when layout or zoom changes
+- Physical page background, border, and shadow rendering
 - Internal semantic document DOM with song and paragraph blocks
 - Save/load support for the initial text-based `.mchord` format
 - PDF export through Qt printing
@@ -29,6 +34,7 @@ editor and worship songbook layout tool.
 - Chord-aware renderer wrapping for narrow columns and future pagination
 - Structured ChordPro render rows for future page, column, and paint layout
 - Semantic song sections for explicit verse, chorus, and bridge markers
+- Lyric syllable ranges with chord attachment for future music-aware layout
 - Row-based pagination that flows render rows through one or more columns while
   keeping chord/lyric segments together
 - Manual page and column break directives in the structured layout engine

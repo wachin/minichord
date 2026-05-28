@@ -196,7 +196,7 @@ translations/
 - [x] Chorus abstraction
 - [x] Bridge abstraction
 - [x] Chord token abstraction
-- [ ] Lyric syllable abstraction
+- [x] Lyric syllable abstraction
 
 ---
 
@@ -220,25 +220,25 @@ It MUST render:
 
 ### Required Page Features
 
-- [ ] A4 support
-- [ ] Letter support
-- [ ] Legal support
-- [ ] Custom page sizes
-- [ ] Portrait orientation
-- [ ] Landscape orientation
-- [ ] Dynamic page resizing
-- [ ] Page background rendering
-- [ ] Page shadow rendering
+- [x] A4 support
+- [x] Letter support
+- [x] Legal support
+- [x] Custom page sizes
+- [x] Portrait orientation
+- [x] Landscape orientation
+- [x] Dynamic page resizing
+- [x] Page background rendering
+- [x] Page shadow rendering
 - [ ] Multi-page vertical view
 - [ ] Continuous page scrolling
 - [ ] Print preview mode
 
 ### Orientation Behavior
 
-- [ ] Dynamic portrait/landscape switching
-- [ ] Instant page re-layout after orientation changes
+- [x] Dynamic portrait/landscape switching
+- [x] Instant page re-layout after orientation changes
 - [ ] Column recalculation after orientation changes
-- [ ] Margin recalculation after orientation changes
+- [x] Margin recalculation after orientation changes
 - [ ] Header/footer repositioning after orientation changes
 - [ ] Landscape-aware print preview
 - [ ] Mixed orientations inside the same document
@@ -269,28 +269,28 @@ Changing margins MUST:
 
 ### Required Margin Features
 
-- [ ] Left margin
-- [ ] Right margin
-- [ ] Top margin
-- [ ] Bottom margin
-- [ ] Mirror margins
-- [ ] Gutter margin
-- [ ] Header spacing
-- [ ] Footer spacing
+- [x] Left margin
+- [x] Right margin
+- [x] Top margin
+- [x] Bottom margin
+- [x] Mirror margins
+- [x] Gutter margin
+- [x] Header spacing
+- [x] Footer spacing
 
 ### Preset Margin Profiles
 
-- [ ] Normal
-- [ ] Narrow
-- [ ] Moderate
-- [ ] Wide
-- [ ] Mirrored
-- [ ] Custom margins
+- [x] Normal
+- [x] Narrow
+- [x] Moderate
+- [x] Wide
+- [x] Mirrored
+- [x] Custom margins
 
 ### Visual Behavior
 
-- [ ] Writable text frame updates dynamically
-- [ ] Text area visually moves after margin changes
+- [x] Writable text frame updates dynamically
+- [x] Text area visually moves after margin changes
 - [ ] Rulers update automatically
 - [ ] Columns adapt to new margins
 - [ ] Headers adapt to new margins

@@ -68,6 +68,29 @@ class ChordToken:
 
 
 @dataclass(frozen=True, slots=True)
+class LyricSyllable:
+    """A singable lyric unit with source offsets and attached chords."""
+
+    text: str
+    start_index: int
+    end_index: int
+    chords: tuple[ChordToken, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.text:
+            raise ValueError("Lyric syllable text cannot be empty.")
+        if self.start_index < 0 or self.end_index <= self.start_index:
+            raise ValueError("Lyric syllable indexes must describe a range.")
+        if len(self.text) != self.end_index - self.start_index:
+            raise ValueError("Lyric syllable text must match its index range.")
+        object.__setattr__(self, "chords", tuple(self.chords))
+
+    @property
+    def length(self) -> int:
+        return self.end_index - self.start_index
+
+
+@dataclass(frozen=True, slots=True)
 class ChordLyricLine:
     """A ChordPro lyric line with zero or more inline chord tokens."""
 
@@ -79,6 +102,10 @@ class ChordLyricLine:
     @property
     def has_chords(self) -> bool:
         return bool(self.chords)
+
+    @property
+    def syllables(self) -> tuple[LyricSyllable, ...]:
+        return build_lyric_syllables(self.lyrics, self.chords)
 
 
 @dataclass(frozen=True, slots=True)
@@ -231,6 +258,38 @@ def build_song_sections(lines: tuple[SongLine, ...]) -> tuple[SongSection, ...]:
         len(lines) - 1,
     )
     return tuple(sections)
+
+
+def build_lyric_syllables(
+    lyrics: str,
+    chords: tuple[ChordToken, ...] = (),
+) -> tuple[LyricSyllable, ...]:
+    """Split a lyric line into syllable ranges and attach anchored chords."""
+    syllable_ranges = _lyric_syllable_ranges(lyrics)
+    attached_chords: list[list[ChordToken]] = [
+        [] for _ in syllable_ranges
+    ]
+
+    for chord in chords:
+        syllable_index = _syllable_index_for_chord(
+            chord,
+            syllable_ranges,
+            len(lyrics),
+        )
+        if syllable_index is not None:
+            attached_chords[syllable_index].append(chord)
+
+    return tuple(
+        LyricSyllable(
+            text=lyrics[start_index:end_index],
+            start_index=start_index,
+            end_index=end_index,
+            chords=tuple(attached_chords[syllable_index]),
+        )
+        for syllable_index, (start_index, end_index) in enumerate(
+            syllable_ranges
+        )
+    )
 
 
 def render_chord_over_lyrics(
@@ -546,6 +605,48 @@ def _lyric_wrap_ranges(
         start_index = next_index
 
     return tuple(ranges)
+
+
+def _lyric_syllable_ranges(lyrics: str) -> tuple[tuple[int, int], ...]:
+    ranges: list[tuple[int, int]] = []
+    index = 0
+
+    while index < len(lyrics):
+        if lyrics[index].isspace():
+            index += 1
+            continue
+
+        start_index = index
+        while index < len(lyrics) and not lyrics[index].isspace():
+            index += 1
+            if (
+                lyrics[index - 1] == "-"
+                and index < len(lyrics)
+                and not lyrics[index].isspace()
+            ):
+                break
+
+        ranges.append((start_index, index))
+
+    return tuple(ranges)
+
+
+def _syllable_index_for_chord(
+    chord: ChordToken,
+    syllable_ranges: tuple[tuple[int, int], ...],
+    lyric_length: int,
+) -> int | None:
+    if not syllable_ranges:
+        return None
+
+    lyric_index = min(max(chord.lyric_index, 0), lyric_length)
+    for syllable_index, (start_index, end_index) in enumerate(syllable_ranges):
+        if start_index <= lyric_index < end_index:
+            return syllable_index
+        if lyric_index < start_index:
+            return syllable_index
+
+    return len(syllable_ranges) - 1
 
 
 def _chords_for_wrapped_range(
