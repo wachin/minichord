@@ -116,9 +116,9 @@ layout engine capable of professional page-oriented rendering.
 - [x] Document recovery manager
 - [x] Songbook recovery system
 - [x] Crash recovery dialog
-- [ ] Document snapshot system
-- [ ] Songbook version snapshots
-- [ ] Restore previous snapshots
+- [x] Document snapshot system
+- [x] Songbook version snapshots
+- [x] Restore previous snapshots
 
 
 ## 0.1 Internationalization with Qt Linguist

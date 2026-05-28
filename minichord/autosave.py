@@ -63,7 +63,7 @@ class AutosaveManager:
 
     def clear(self, source_path: str | Path | None, draft_id: str) -> None:
         """Remove the autosave draft for a source path or untitled draft."""
-        with contextlib.suppress(FileNotFoundError):
+        with contextlib.suppress(OSError):
             self.autosave_path(source_path, draft_id).unlink()
 
     @staticmethod

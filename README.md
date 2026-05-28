@@ -17,6 +17,9 @@ editor and worship songbook layout tool.
 - Document recovery discovery for autosaved drafts
 - Songbook recovery discovery for `.mchordbook` autosave drafts
 - Startup crash recovery dialog for autosaved document drafts
+- Document version snapshots for restorable `.mchord` history
+- Songbook version snapshots for restorable `.mchordbook` history
+- Snapshot restore helpers for `.mchord` and `.mchordbook` files
 - Plain-Python ChordPro parser foundation for metadata, directives, inline chords,
   and traditional chord-over-lyrics text
 - Monospaced chord-over-lyrics renderer with basic chord collision avoidance
