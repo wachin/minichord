@@ -7,8 +7,10 @@ from minichord import __version__
 from minichord.app import build_application
 from minichord.autosave import AutosaveManager
 from minichord.backup import BackupManager
+from minichord.document import MiniChordDocument
 import minichord.main_window as main_window_module
 from minichord.main_window import MainWindow
+from minichord.recovery import RecoveryManager
 from minichord.resources import APP_ICON_PATH
 from minichord.settings import (
     APPLICATION_NAME,
@@ -248,3 +250,90 @@ def test_main_window_creates_backup_before_overwriting_file(qtbot, tmp_path):
     assert len(snapshots) == 1
     assert snapshots[0].read_text(encoding="utf-8") == "old version\n"
     assert "[A]New version" in path.read_text(encoding="utf-8")
+
+
+def test_main_window_recovers_selected_autosave_draft(qtbot, monkeypatch, tmp_path):
+    autosave_manager = AutosaveManager(tmp_path / "autosave")
+    source_path = tmp_path / "song.mchord"
+    autosave_manager.write(
+        MiniChordDocument(text="[E]Recovered", title="Recovered"),
+        source_path=source_path,
+        draft_id="draft-1",
+    )
+    recovery_manager = RecoveryManager(autosave_manager)
+    selected_draft = recovery_manager.autosave_drafts()[0]
+
+    class FakeRecoveryDialog:
+        DISCARD_ACTION = "discard"
+        RECOVER_ACTION = "recover"
+
+        class DialogCode:
+            Accepted = 1
+
+        def __init__(self, drafts, parent):
+            self.drafts = drafts
+            self.parent = parent
+
+        def exec(self):
+            return self.DialogCode.Accepted
+
+        def selected_draft(self):
+            return selected_draft
+
+        def selected_action(self):
+            return self.RECOVER_ACTION
+
+    monkeypatch.setattr(main_window_module, "RecoveryDialog", FakeRecoveryDialog)
+    window = MainWindow(
+        settings=temporary_settings(tmp_path),
+        autosave_manager=autosave_manager,
+        recovery_manager=recovery_manager,
+    )
+    qtbot.addWidget(window)
+
+    assert window.show_crash_recovery_dialog()
+    assert window.editor.text() == "[E]Recovered\n"
+    assert window.current_path == source_path.resolve(strict=False)
+    assert not selected_draft.path.exists()
+
+
+def test_main_window_discards_selected_autosave_draft(qtbot, monkeypatch, tmp_path):
+    autosave_manager = AutosaveManager(tmp_path / "autosave")
+    autosave_manager.write(
+        MiniChordDocument(text="[E]Discard me", title="Discard"),
+        source_path=None,
+        draft_id="draft-1",
+    )
+    recovery_manager = RecoveryManager(autosave_manager)
+    selected_draft = recovery_manager.autosave_drafts()[0]
+
+    class FakeRecoveryDialog:
+        DISCARD_ACTION = "discard"
+
+        class DialogCode:
+            Accepted = 1
+
+        def __init__(self, drafts, parent):
+            self.drafts = drafts
+            self.parent = parent
+
+        def exec(self):
+            return self.DialogCode.Accepted
+
+        def selected_draft(self):
+            return selected_draft
+
+        def selected_action(self):
+            return self.DISCARD_ACTION
+
+    monkeypatch.setattr(main_window_module, "RecoveryDialog", FakeRecoveryDialog)
+    window = MainWindow(
+        settings=temporary_settings(tmp_path),
+        autosave_manager=autosave_manager,
+        recovery_manager=recovery_manager,
+    )
+    qtbot.addWidget(window)
+
+    assert window.show_crash_recovery_dialog()
+    assert window.editor.text() == ""
+    assert not selected_draft.path.exists()

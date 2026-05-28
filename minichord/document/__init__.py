@@ -20,6 +20,7 @@ from minichord.document.pagination import (
     paginate_layout,
 )
 from minichord.document.page import PageLayout, PageMargins
+from minichord.document.songbook import MiniChordSongbook
 
 __all__ = [
     "BlankLine",
@@ -29,6 +30,7 @@ __all__ = [
     "ChordProSong",
     "ChordToken",
     "MiniChordDocument",
+    "MiniChordSongbook",
     "PaginatedLayout",
     "PageLayout",
     "PageMargins",

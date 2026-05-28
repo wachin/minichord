@@ -20,9 +20,11 @@ from minichord.autosave import DEFAULT_AUTOSAVE_INTERVAL_MS, AutosaveManager
 from minichord.backup import BackupManager
 from minichord.document import MiniChordDocument
 from minichord.resources import app_icon
+from minichord.recovery import RecoveryDraft, RecoveryManager
 from minichord.settings import THEME_DARK, THEME_LIGHT, THEME_SYSTEM, SettingsManager
 from minichord.theme import apply_theme
 from minichord.ui.page_editor import PageEditor
+from minichord.ui.recovery_dialog import RecoveryDialog
 
 
 class MainWindow(QMainWindow):
@@ -33,12 +35,14 @@ class MainWindow(QMainWindow):
         settings: SettingsManager | None = None,
         autosave_manager: AutosaveManager | None = None,
         backup_manager: BackupManager | None = None,
+        recovery_manager: RecoveryManager | None = None,
         autosave_interval_ms: int = DEFAULT_AUTOSAVE_INTERVAL_MS,
     ):
         super().__init__()
         self.settings = settings or SettingsManager()
         self.autosave_manager = autosave_manager or AutosaveManager()
         self.backup_manager = backup_manager or BackupManager()
+        self.recovery_manager = recovery_manager or RecoveryManager(self.autosave_manager)
         self._autosave_draft_id = AutosaveManager.new_draft_id()
         self._autosave_dirty = False
         self._autosave_suspended = False
@@ -208,6 +212,30 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(self.tr("Autosaved draft"))
         return draft.path
 
+    def show_crash_recovery_dialog(self) -> bool:
+        """Show recoverable autosave drafts, returning whether one was handled."""
+        drafts = self.recovery_manager.autosave_drafts()
+        if not drafts:
+            return False
+
+        dialog = RecoveryDialog(drafts, self)
+        if dialog.exec() != RecoveryDialog.DialogCode.Accepted:
+            return False
+
+        draft = dialog.selected_draft()
+        if draft is None:
+            return False
+
+        if dialog.selected_action() == RecoveryDialog.DISCARD_ACTION:
+            self.recovery_manager.discard(draft)
+            self.statusBar().showMessage(self.tr("Discarded autosaved draft"))
+            return True
+
+        self._recover_draft(draft)
+        self.recovery_manager.discard(draft)
+        self.statusBar().showMessage(self.tr("Recovered autosaved draft"))
+        return True
+
     def _about_text(self) -> str:
         return self.tr(
             "<h2>miniChord {version}</h2>"
@@ -345,6 +373,15 @@ class MainWindow(QMainWindow):
         self.autosave_manager.clear(self.current_path, self._autosave_draft_id)
         self._autosave_dirty = False
         self._autosave_timer.stop()
+
+    def _recover_draft(self, draft: RecoveryDraft) -> None:
+        self._set_editor_text_without_autosave(draft.document.text)
+        self.current_path = draft.source_path
+        self._autosave_draft_id = AutosaveManager.new_draft_id()
+        if self.current_path is None:
+            self.setWindowTitle(self.tr("miniChord - Recovered Draft"))
+        else:
+            self.setWindowTitle(self.tr("miniChord - {name}").format(name=self.current_path.name))
 
     def closeEvent(self, event) -> None:  # noqa: ANN001 - Qt override
         self.perform_autosave()

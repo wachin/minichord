@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 from collections.abc import Sequence
 
+from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication
 
 from minichord import __version__
@@ -39,4 +40,5 @@ def main(argv: Sequence[str] | None = None) -> int:
     app = build_application(argv)
     window = MainWindow(settings=SettingsManager())
     window.show()
+    QTimer.singleShot(0, window.show_crash_recovery_dialog)
     return app.exec()
