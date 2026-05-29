@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from math import ceil
 
 from PyQt6.QtCore import QSize, Qt
-from PyQt6.QtGui import QColor
+from PyQt6.QtGui import QColor, QFontMetrics
 from PyQt6.QtWidgets import (
     QFrame,
     QGridLayout,
@@ -43,6 +44,13 @@ class PageWidget(QFrame):
         self.editor.setObjectName("pageTextEditor")
         self.editor.setFrameShape(QFrame.Shape.NoFrame)
         self.editor.setAcceptRichText(False)
+        self.editor.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
+        self.editor.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.editor.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
         self.editor.setPlaceholderText(self.tr("Write your song here..."))
         self.safe_area_frame = QFrame(self)
         self.safe_area_frame.setObjectName("printerSafeAreaFrame")
@@ -109,6 +117,20 @@ class PageWidget(QFrame):
     def set_text(self, text: str) -> None:
         self.editor.setPlainText(text)
 
+    def text_row_capacity(self) -> int:
+        metrics = QFontMetrics(self.editor.font())
+        return max(1, self.editor.height() // max(1, metrics.lineSpacing()))
+
+    def text_rows_for_line(self, line: str) -> int:
+        text = line.rstrip("\r\n")
+        if text == "":
+            return 1
+
+        metrics = QFontMetrics(self.editor.font())
+        document_margin = int(self.editor.document().documentMargin() * 2)
+        available_width = max(1, self.editor.width() - document_margin)
+        return max(1, ceil(metrics.horizontalAdvance(text) / available_width))
+
     def sizeHint(self) -> QSize:
         width, height = self._layout.page_size_px(DEFAULT_SCREEN_DPI, self._zoom)
         return QSize(width, height)
@@ -164,6 +186,8 @@ class PageEditor(QWidget):
         self.setObjectName("pageEditor")
         self._pages: list[PageWidget] = []
         self._pages_per_row = SINGLE_PAGE_VIEW_COLUMNS
+        self._full_text = ""
+        self._setting_page_text = False
 
         self._scroll_area = QScrollArea()
         self._scroll_area.setObjectName("pageScrollArea")
@@ -187,10 +211,11 @@ class PageEditor(QWidget):
         layout.addWidget(self._scroll_area)
 
     def text(self) -> str:
-        return self.page.text()
+        return self._full_text
 
     def set_text(self, text: str) -> None:
-        self.page.set_text(text)
+        self._full_text = text
+        self._paginate_full_text()
 
     def text_document(self):
         return self.page.editor.document()
@@ -291,6 +316,9 @@ class PageEditor(QWidget):
 
     def _append_page(self, layout: PageLayout, editable: bool) -> PageWidget:
         page = PageWidget(layout=layout, editable=editable, parent=self._content)
+        page.editor.document().contentsChanged.connect(
+            self._handle_page_text_changed
+        )
         self._pages.append(page)
         self._reflow_page_grid()
         return page
@@ -317,6 +345,57 @@ class PageEditor(QWidget):
             )
 
         self._content.updateGeometry()
+
+    def _paginate_full_text(self) -> None:
+        page_chunks = self._page_text_chunks(self._full_text)
+        page_layout = self.page_layout()
+        self.set_page_layouts(tuple(page_layout for _ in page_chunks))
+        self._set_page_texts(page_chunks)
+
+    def _set_page_texts(self, page_texts: Sequence[str]) -> None:
+        self._setting_page_text = True
+        try:
+            for page, page_text in zip(self._pages, page_texts):
+                document = page.editor.document()
+                signals_were_blocked = document.blockSignals(True)
+                try:
+                    page.set_text(page_text)
+                finally:
+                    document.blockSignals(signals_were_blocked)
+        finally:
+            self._setting_page_text = False
+
+    def _handle_page_text_changed(self) -> None:
+        if self._setting_page_text:
+            return
+        self._full_text = "".join(page.text() for page in self._pages)
+
+    def _page_text_chunks(self, text: str) -> tuple[str, ...]:
+        if text == "":
+            return ("",)
+
+        page_rows = self.page.text_row_capacity()
+        chunks: list[str] = []
+        current_lines: list[str] = []
+        current_row_count = 0
+
+        for source_line in text.splitlines(keepends=True):
+            line_row_count = self.page.text_rows_for_line(source_line)
+            if (
+                current_lines
+                and current_row_count + line_row_count > page_rows
+            ):
+                chunks.append("".join(current_lines))
+                current_lines = []
+                current_row_count = 0
+
+            current_lines.append(source_line)
+            current_row_count += line_row_count
+
+        if current_lines:
+            chunks.append("".join(current_lines))
+
+        return tuple(chunks) or ("",)
 
     def _available_canvas_size(
         self,

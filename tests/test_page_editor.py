@@ -1,4 +1,4 @@
-from PyQt6.QtCore import QRect, QSize
+from PyQt6.QtCore import QRect, QSize, Qt
 import pytest
 from PyQt6.QtWidgets import QGraphicsDropShadowEffect, QScrollArea
 
@@ -76,6 +76,20 @@ def test_page_widget_renders_page_background_and_shadow(qtbot):
     assert shadow.xOffset() == 0.0
     assert shadow.yOffset() == 4.0
     assert shadow.color().alpha() == 55
+
+
+def test_page_widget_disables_internal_editor_scrollbars(qtbot):
+    page = PageWidget()
+    qtbot.addWidget(page)
+
+    assert (
+        page.editor.verticalScrollBarPolicy()
+        == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+    )
+    assert (
+        page.editor.horizontalScrollBarPolicy()
+        == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+    )
 
 
 def test_page_widget_hides_safe_area_frame_without_printer_margins(qtbot):
@@ -217,6 +231,32 @@ def test_page_editor_stacks_multiple_pages_in_continuous_scroll_view(qtbot):
     assert editor.pages_per_row() == SINGLE_PAGE_VIEW_COLUMNS
     assert page_grid_position(editor, 0) == (0, 0)
     assert page_grid_position(editor, 1) == (1, 0)
+
+
+def test_page_editor_paginates_loaded_text_without_internal_page_scroll(qtbot):
+    editor = PageEditor()
+    qtbot.addWidget(editor)
+    layout = PageLayout(
+        page_size=CUSTOM_PAGE_SIZE,
+        custom_size_mm=(80.0, 40.0),
+        margins=PageMargins(left=5.0, top=5.0, right=5.0, bottom=5.0),
+    )
+    source = "".join(f"line {line_number}\n" for line_number in range(1, 40))
+    editor.set_page_layout(layout)
+
+    editor.set_text(source)
+
+    assert editor.page_count() > 1
+    assert editor.text() == source
+    assert "".join(page.text() for page in editor.pages()) == source
+    assert all(
+        page.editor.verticalScrollBarPolicy()
+        == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        for page in editor.pages()
+    )
+    assert all(
+        page.editor.verticalScrollBar().maximum() == 0 for page in editor.pages()
+    )
 
 
 def test_page_editor_can_show_multiple_pages_per_row(qtbot):

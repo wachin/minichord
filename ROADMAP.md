@@ -301,6 +301,13 @@ Changing margins MUST:
 
 ## 1.4 Text Flow Engine
 
+Important:
+Physical pages must never become internally scrollable text containers.
+When content exceeds the writable frame of a page, the document layout engine
+must create another page or column and continue the flow there. The only normal
+scrollbar in print-layout mode should belong to the page canvas/document view,
+not to an individual page.
+
 - [x] Automatic page overflow handling
 - [x] Automatic page creation
 - [x] Text reflow between pages

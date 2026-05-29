@@ -8,7 +8,12 @@ from minichord import __version__
 from minichord.app import build_application
 from minichord.autosave import AutosaveManager
 from minichord.backup import BackupManager
-from minichord.document import MiniChordDocument
+from minichord.document import (
+    CUSTOM_PAGE_SIZE,
+    MiniChordDocument,
+    PageLayout,
+    PageMargins,
+)
 from minichord.i18n import install_translations
 import minichord.main_window as main_window_module
 from minichord.main_window import MainWindow
@@ -333,6 +338,29 @@ def test_main_window_saves_mchord_file(qtbot, tmp_path):
     assert "[C]Amazing grace" in content
     assert settings.recent_files() == [path.resolve(strict=False)]
     assert settings.last_directory() == tmp_path.resolve(strict=False)
+
+
+def test_main_window_saves_full_paginated_document(qtbot, tmp_path):
+    settings = temporary_settings(tmp_path)
+    window = MainWindow(settings=settings)
+    qtbot.addWidget(window)
+    path = Path(tmp_path) / "long-song.mchord"
+    source = "".join(f"[C]Verse line {line_number}\n" for line_number in range(1, 40))
+    window.editor.set_page_layout(
+        PageLayout(
+            page_size=CUSTOM_PAGE_SIZE,
+            custom_size_mm=(80.0, 40.0),
+            margins=PageMargins(left=5.0, top=5.0, right=5.0, bottom=5.0),
+        )
+    )
+
+    window.editor.set_text(source)
+    window.save_path(path)
+
+    content = path.read_text(encoding="utf-8")
+    assert window.editor.page_count() > 1
+    assert "[C]Verse line 1" in content
+    assert "[C]Verse line 39" in content
 
 
 def test_main_window_autosaves_modified_document(qtbot, tmp_path):

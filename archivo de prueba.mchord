@@ -1,0 +1,66 @@
+---
+format: minichord-song
+version: 1
+title: Untitled Song
+---
+
+{title: Canta al Señor (C#) Con arreglos}
+{subtitle: Vertical}
+{comment: Poner el Capotraste en la 1ra}
+
+{comment: INTRO x3}
+Am  G  F
+
+{comment: VERSO}
+[C]Mi Cristo,[G] mi Rey, n[Am]adie es c[G]omo t[F]u
+Toda mi v[C]ida, qui[F]ero exalt[G]ar,
+las m[Am]aravillas d[A#]e tu amo[G]r
+
+[C]Consuelo, r[G]efugio,
+t[Am]orre de fu[G]erza y pod[F]er
+Todo mi s[C]er, l[F]o que s[G]oy,
+n[Am]unca cese d[A#]e ador[G]ar
+
+{comment: CORO I}
+C[C]ante al Señ[Am]or toda l[F]a creación[G]
+H[C]onra y pod[Am]er, majest[F]ad sea al Rey[G]
+[Am]Incompar[G]ables prom[F]esas me das
+Señ[Am]or[G][F][Am][G][F]
+
+{comment: VERSO}
+
+{comment: CORO I y II}
+C[C]ante al Señ[Am]or toda l[F]a creación [G]
+[C]Honra y po[Am]der, majest[F]ad sea al Rey [G]
+M[Am]ontes caer[G]án y el m[F]ar rugirá,
+Al son[G]ar d[Am]e tu n[G]ombre
+C[C]anto con g[Am]ozo al mir[F]ar tu poder [G]
+Por s[C]iempre yo t[Am]e amar[F]é y diré [G]
+[Am]Incomp[G]arables prom[F]esas me das Señ[Am]or [G][F]
+       son incompar[Am]able[G]s[F]
+       son incompar[Am]able[G]s[F]
+Todo mi s[C]er, l[F]o que s[G]oy,
+n[Am]unca cese de [A#]ador[G]ar [Am][G][F][Am][G][F]
+
+{comment: CORO I y II}
+C[C]ante al Señ[Am]or toda l[F]a creación [G]
+H[C]onra y pod[Am]er, majest[F]ad sea al Rey[G]
+M[Am]ontes caer[G]án y el m[F]ar rugirá,
+
+C[C]ante al Señ[Am]or toda l[F]a creación [G]
+H[C]onra y pod[Am]er, majest[F]ad sea al Rey [G]
+M[Am]ontes caer[G]án y el m[F]ar rugirá,
+Al son[G]ar d[Am]e tu n[G]ombre
+C[C]anto con g[Am]ozo al mir[F]ar tu poder [G]
+Por s[C]iempre yo t[Am]e amar[F]é y diré [G]
+
+{comment: FINAL n}
+[C]Incompar[F]ables prom[G]esas me das
+[Am]Incompar[G]ables prom[F]esas me das
+[Am]Incompar[G]ables prom[F]esas me das, etc
+
+#{chord: C base-fret 1 frets N 3 2 0 1 0}
+#{chord: G base-fret 1 frets 3 2 0 0 0 3}
+#{chord: Am base-fret 1 frets N 0 2 2 1 0}
+#{chord: F base-fret 1 frets 1 3 3 2 1 1}
+#{chord: A# base-fret 1 frets N 1 3 3 3 1}
