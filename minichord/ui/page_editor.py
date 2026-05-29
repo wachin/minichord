@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from math import ceil
 
 from PyQt6.QtCore import QSize, Qt
-from PyQt6.QtGui import QColor, QFontMetrics
+from PyQt6.QtGui import QColor, QTextDocument
 from PyQt6.QtWidgets import (
     QFrame,
     QGridLayout,
@@ -117,19 +116,16 @@ class PageWidget(QFrame):
     def set_text(self, text: str) -> None:
         self.editor.setPlainText(text)
 
-    def text_row_capacity(self) -> int:
-        metrics = QFontMetrics(self.editor.font())
-        return max(1, self.editor.height() // max(1, metrics.lineSpacing()))
+    def text_height_for(self, text: str) -> float:
+        document = QTextDocument()
+        document.setDefaultFont(self.editor.font())
+        document.setDocumentMargin(self.editor.document().documentMargin())
+        document.setTextWidth(self._document_text_width())
+        document.setPlainText(text)
+        return document.documentLayout().documentSize().height()
 
-    def text_rows_for_line(self, line: str) -> int:
-        text = line.rstrip("\r\n")
-        if text == "":
-            return 1
-
-        metrics = QFontMetrics(self.editor.font())
-        document_margin = int(self.editor.document().documentMargin() * 2)
-        available_width = max(1, self.editor.width() - document_margin)
-        return max(1, ceil(metrics.horizontalAdvance(text) / available_width))
+    def text_fits(self, text: str) -> bool:
+        return self.text_height_for(text) <= self.editor.height() + 0.5
 
     def sizeHint(self) -> QSize:
         width, height = self._layout.page_size_px(DEFAULT_SCREEN_DPI, self._zoom)
@@ -159,6 +155,10 @@ class PageWidget(QFrame):
             max(1, self.height() - top - bottom),
         )
         self.safe_area_frame.raise_()
+
+    def _document_text_width(self) -> int:
+        document_margin = int(self.editor.document().documentMargin() * 2)
+        return max(1, self.editor.width() - document_margin)
 
     def _place_safe_area_frame(self) -> None:
         if not self._layout.has_printer_safe_area():
@@ -236,6 +236,8 @@ class PageEditor(QWidget):
 
     def set_page_layout(self, layout: PageLayout) -> None:
         self.set_page_layouts(tuple(layout for _ in self._pages))
+        if self._full_text:
+            self._paginate_full_text()
 
     def page_layouts(self) -> tuple[PageLayout, ...]:
         return tuple(page.page_layout() for page in self._pages)
@@ -276,6 +278,8 @@ class PageEditor(QWidget):
     def set_zoom(self, zoom: float) -> None:
         for page in self._pages:
             page.set_zoom(zoom)
+        if self._full_text:
+            self._paginate_full_text()
 
     def pages_per_row(self) -> int:
         return self._pages_per_row
@@ -369,33 +373,48 @@ class PageEditor(QWidget):
         if self._setting_page_text:
             return
         self._full_text = "".join(page.text() for page in self._pages)
+        self._paginate_full_text()
 
     def _page_text_chunks(self, text: str) -> tuple[str, ...]:
         if text == "":
             return ("",)
 
-        page_rows = self.page.text_row_capacity()
         chunks: list[str] = []
-        current_lines: list[str] = []
-        current_row_count = 0
+        current_chunk = ""
 
         for source_line in text.splitlines(keepends=True):
-            line_row_count = self.page.text_rows_for_line(source_line)
-            if (
-                current_lines
-                and current_row_count + line_row_count > page_rows
-            ):
-                chunks.append("".join(current_lines))
-                current_lines = []
-                current_row_count = 0
+            candidate = f"{current_chunk}{source_line}"
+            if current_chunk and not self.page.text_fits(candidate):
+                chunks.append(current_chunk)
+                current_chunk = source_line
+            else:
+                current_chunk = candidate
 
-            current_lines.append(source_line)
-            current_row_count += line_row_count
+            if current_chunk and not self.page.text_fits(current_chunk):
+                oversized_chunks = self._split_oversized_line(current_chunk)
+                chunks.extend(oversized_chunks[:-1])
+                current_chunk = oversized_chunks[-1]
 
-        if current_lines:
-            chunks.append("".join(current_lines))
+        if current_chunk:
+            chunks.append(current_chunk)
 
         return tuple(chunks) or ("",)
+
+    def _split_oversized_line(self, line: str) -> tuple[str, ...]:
+        chunks: list[str] = []
+        current_chunk = ""
+        for character in line:
+            candidate = f"{current_chunk}{character}"
+            if current_chunk and not self.page.text_fits(candidate):
+                chunks.append(current_chunk)
+                current_chunk = character
+            else:
+                current_chunk = candidate
+
+        if current_chunk:
+            chunks.append(current_chunk)
+
+        return tuple(chunks) or (line,)
 
     def _available_canvas_size(
         self,

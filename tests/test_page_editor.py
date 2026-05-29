@@ -45,6 +45,10 @@ def page_grid_position(editor: PageEditor, page_index: int) -> tuple[int, int]:
     return row, column
 
 
+def page_text_height(page: PageWidget) -> float:
+    return page.editor.document().documentLayout().documentSize().height()
+
+
 def test_page_widget_sizes_itself_from_page_layout(qtbot):
     layout = PageLayout(
         page_size=CUSTOM_PAGE_SIZE,
@@ -256,6 +260,58 @@ def test_page_editor_paginates_loaded_text_without_internal_page_scroll(qtbot):
     )
     assert all(
         page.editor.verticalScrollBar().maximum() == 0 for page in editor.pages()
+    )
+    assert all(
+        page_text_height(page) <= page.editor.height() + 1
+        for page in editor.pages()
+    )
+
+
+def test_page_editor_paginates_wrapped_text_by_real_document_height(qtbot):
+    editor = PageEditor()
+    qtbot.addWidget(editor)
+    layout = PageLayout(
+        page_size=CUSTOM_PAGE_SIZE,
+        custom_size_mm=(70.0, 45.0),
+        margins=PageMargins(left=5.0, top=5.0, right=5.0, bottom=5.0),
+    )
+    wrapped_line = (
+        "[C]This is a very long ChordPro lyric line that must wrap inside "
+        "the writable frame instead of disappearing below the page.\n"
+    )
+    source = wrapped_line * 12
+    editor.set_page_layout(layout)
+
+    editor.set_text(source)
+
+    assert editor.page_count() > 1
+    assert editor.text() == source
+    assert "".join(page.text() for page in editor.pages()) == source
+    assert all(
+        page_text_height(page) <= page.editor.height() + 1
+        for page in editor.pages()
+    )
+
+
+def test_page_editor_reflows_pasted_text_into_new_pages(qtbot):
+    editor = PageEditor()
+    qtbot.addWidget(editor)
+    layout = PageLayout(
+        page_size=CUSTOM_PAGE_SIZE,
+        custom_size_mm=(80.0, 40.0),
+        margins=PageMargins(left=5.0, top=5.0, right=5.0, bottom=5.0),
+    )
+    source = "".join(f"pasted line {line_number}\n" for line_number in range(1, 40))
+    editor.set_page_layout(layout)
+
+    editor.page.editor.setPlainText(source)
+
+    assert editor.page_count() > 1
+    assert editor.text() == source
+    assert "".join(page.text() for page in editor.pages()) == source
+    assert all(
+        page_text_height(page) <= page.editor.height() + 1
+        for page in editor.pages()
     )
 
 
