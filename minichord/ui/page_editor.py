@@ -20,6 +20,8 @@ from minichord.document.page import DEFAULT_SCREEN_DPI, PageLayout
 
 PAGE_CANVAS_MARGIN_PX = 24
 PAGE_SPACING_PX = 24
+MIN_ZOOM = 0.25
+MAX_ZOOM = 4.0
 
 
 class PageWidget(QFrame):
@@ -83,7 +85,7 @@ class PageWidget(QFrame):
         self._apply_layout()
 
     def set_zoom(self, zoom: float) -> None:
-        self._zoom = max(0.25, min(zoom, 4.0))
+        self._zoom = clamped_zoom(zoom)
         self._apply_layout()
 
     def zoom(self) -> float:
@@ -247,6 +249,28 @@ class PageEditor(QWidget):
         for page in self._pages:
             page.set_zoom(zoom)
 
+    def fit_width_zoom(self, viewport_size: QSize | None = None) -> float:
+        """Return the zoom needed to fit the first page width in the viewport."""
+        page_width, _ = self.page_layout().page_size_px(DEFAULT_SCREEN_DPI)
+        available_width, _ = self._available_canvas_size(viewport_size)
+        return clamped_zoom(available_width / page_width)
+
+    def fit_page_zoom(self, viewport_size: QSize | None = None) -> float:
+        """Return the zoom needed to fit the first page entirely in the viewport."""
+        page_width, page_height = self.page_layout().page_size_px(DEFAULT_SCREEN_DPI)
+        available_width, available_height = self._available_canvas_size(viewport_size)
+        return clamped_zoom(
+            min(available_width / page_width, available_height / page_height)
+        )
+
+    def fit_width(self) -> float:
+        self.set_zoom(self.fit_width_zoom())
+        return self.zoom()
+
+    def fit_page(self) -> float:
+        self.set_zoom(self.fit_page_zoom())
+        return self.zoom()
+
     def _append_page(self, layout: PageLayout, editable: bool) -> PageWidget:
         page = PageWidget(layout=layout, editable=editable, parent=self._content)
         self._pages.append(page)
@@ -263,3 +287,19 @@ class PageEditor(QWidget):
         self._content_layout.removeWidget(page)
         page.setParent(None)
         page.deleteLater()
+
+    def _available_canvas_size(
+        self,
+        viewport_size: QSize | None = None,
+    ) -> tuple[int, int]:
+        size = viewport_size or self._scroll_area.viewport().size()
+        margins = self._content_layout.contentsMargins()
+        return (
+            max(1, size.width() - margins.left() - margins.right()),
+            max(1, size.height() - margins.top() - margins.bottom()),
+        )
+
+
+def clamped_zoom(zoom: float) -> float:
+    """Return a zoom value within the supported page rendering range."""
+    return max(MIN_ZOOM, min(zoom, MAX_ZOOM))

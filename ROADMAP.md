@@ -363,10 +363,10 @@ The engine MUST support:
 
 ## 1.7 Zoom and View Modes
 
-- [ ] Zoom in
-- [ ] Zoom out
-- [ ] Fit page
-- [ ] Fit width
+- [x] Zoom in
+- [x] Zoom out
+- [x] Fit page
+- [x] Fit width
 - [ ] Multiple page view
 - [ ] Draft mode
 - [ ] Print layout mode

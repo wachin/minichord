@@ -30,9 +30,13 @@ from minichord.settings import (
     SettingsManager,
 )
 from minichord.theme import apply_theme
-from minichord.ui.page_editor import PageEditor
+from minichord.ui.page_editor import MAX_ZOOM, MIN_ZOOM, PageEditor
 from minichord.ui.preferences_dialog import PreferencesDialog
 from minichord.ui.recovery_dialog import RecoveryDialog
+
+
+DEFAULT_ZOOM = 1.0
+ZOOM_STEP = 0.1
 
 
 class MainWindow(QMainWindow):
@@ -70,6 +74,7 @@ class MainWindow(QMainWindow):
         self._create_menus()
         self._create_toolbar()
         self._sync_theme_actions()
+        self._sync_zoom_actions()
         self.settings.restore_main_window(self)
         self.statusBar().showMessage(self.tr("Ready"))
 
@@ -211,6 +216,30 @@ class MainWindow(QMainWindow):
             self.tr("Theme: {theme}").format(theme=self._theme_label(self.settings.theme()))
         )
 
+    def set_zoom(self, zoom: float) -> None:
+        self.editor.set_zoom(zoom)
+        self._sync_zoom_actions()
+        self._show_zoom_message()
+
+    def zoom_in(self) -> None:
+        self.set_zoom(round(self.editor.zoom() + ZOOM_STEP, 2))
+
+    def zoom_out(self) -> None:
+        self.set_zoom(round(self.editor.zoom() - ZOOM_STEP, 2))
+
+    def reset_zoom(self) -> None:
+        self.set_zoom(DEFAULT_ZOOM)
+
+    def fit_width(self) -> None:
+        self.editor.fit_width()
+        self._sync_zoom_actions()
+        self._show_zoom_message()
+
+    def fit_page(self) -> None:
+        self.editor.fit_page()
+        self._sync_zoom_actions()
+        self._show_zoom_message()
+
     def perform_autosave(self, force: bool = False) -> Path | None:
         """Write a crash-recovery draft when the document has pending edits."""
         self._autosave_timer.stop()
@@ -301,6 +330,24 @@ class MainWindow(QMainWindow):
         self.preferences_action = QAction(self.tr("Preferences..."), self)
         self.preferences_action.triggered.connect(self.show_preferences_dialog)
 
+        self.zoom_in_action = QAction(self.tr("Zoom In"), self)
+        self.zoom_in_action.setShortcut("Ctrl++")
+        self.zoom_in_action.triggered.connect(self.zoom_in)
+
+        self.zoom_out_action = QAction(self.tr("Zoom Out"), self)
+        self.zoom_out_action.setShortcut("Ctrl+-")
+        self.zoom_out_action.triggered.connect(self.zoom_out)
+
+        self.reset_zoom_action = QAction(self.tr("Actual Size"), self)
+        self.reset_zoom_action.setShortcut("Ctrl+0")
+        self.reset_zoom_action.triggered.connect(self.reset_zoom)
+
+        self.fit_width_action = QAction(self.tr("Fit Width"), self)
+        self.fit_width_action.triggered.connect(self.fit_width)
+
+        self.fit_page_action = QAction(self.tr("Fit Page"), self)
+        self.fit_page_action.triggered.connect(self.fit_page)
+
         self.about_action = QAction(self.tr("About miniChord"), self)
         self.about_action.triggered.connect(self.show_about_dialog)
 
@@ -335,6 +382,14 @@ class MainWindow(QMainWindow):
         self.edit_menu.addAction(self.preferences_action)
 
         self.view_menu = self.menuBar().addMenu(self.tr("View"))
+        self.zoom_menu = self.view_menu.addMenu(self.tr("Zoom"))
+        self.zoom_menu.addAction(self.zoom_in_action)
+        self.zoom_menu.addAction(self.zoom_out_action)
+        self.zoom_menu.addAction(self.reset_zoom_action)
+        self.zoom_menu.addSeparator()
+        self.zoom_menu.addAction(self.fit_width_action)
+        self.zoom_menu.addAction(self.fit_page_action)
+        self.view_menu.addSeparator()
         self.theme_menu = self.view_menu.addMenu(self.tr("Theme"))
         self.theme_menu.addAction(self.system_theme_action)
         self.theme_menu.addAction(self.light_theme_action)
@@ -351,6 +406,10 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(self.open_action)
         self.toolbar.addAction(self.save_action)
         self.toolbar.addAction(self.export_pdf_action)
+        self.toolbar.addSeparator()
+        self.toolbar.addAction(self.zoom_out_action)
+        self.toolbar.addAction(self.zoom_in_action)
+        self.toolbar.addAction(self.fit_width_action)
         self.addToolBar(self.toolbar)
 
     def _file_dialog_directory(self) -> str:
@@ -371,6 +430,20 @@ class MainWindow(QMainWindow):
         current_theme = self.settings.theme()
         for action in self.theme_action_group.actions():
             action.setChecked(action.data() == current_theme)
+
+    def _sync_zoom_actions(self) -> None:
+        current_zoom = self.editor.zoom()
+        self.zoom_out_action.setEnabled(current_zoom > MIN_ZOOM)
+        self.zoom_in_action.setEnabled(current_zoom < MAX_ZOOM)
+        self.reset_zoom_action.setEnabled(abs(current_zoom - DEFAULT_ZOOM) > 0.001)
+
+    def _show_zoom_message(self) -> None:
+        self.statusBar().showMessage(
+            self.tr("Zoom: {percent}%").format(percent=self._zoom_percent())
+        )
+
+    def _zoom_percent(self) -> int:
+        return round(self.editor.zoom() * 100)
 
     def _apply_current_theme(self) -> None:
         app = QApplication.instance()
@@ -401,6 +474,11 @@ class MainWindow(QMainWindow):
         self.export_pdf_action.setText(self.tr("Export PDF..."))
         self.quit_action.setText(self.tr("Quit"))
         self.preferences_action.setText(self.tr("Preferences..."))
+        self.zoom_in_action.setText(self.tr("Zoom In"))
+        self.zoom_out_action.setText(self.tr("Zoom Out"))
+        self.reset_zoom_action.setText(self.tr("Actual Size"))
+        self.fit_width_action.setText(self.tr("Fit Width"))
+        self.fit_page_action.setText(self.tr("Fit Page"))
         self.about_action.setText(self.tr("About miniChord"))
         self.system_theme_action.setText(self.tr("System"))
         self.light_theme_action.setText(self.tr("Light"))
@@ -409,6 +487,7 @@ class MainWindow(QMainWindow):
         self.file_menu.setTitle(self.tr("File"))
         self.edit_menu.setTitle(self.tr("Edit"))
         self.view_menu.setTitle(self.tr("View"))
+        self.zoom_menu.setTitle(self.tr("Zoom"))
         self.theme_menu.setTitle(self.tr("Theme"))
         self.help_menu.setTitle(self.tr("Help"))
         self.toolbar.setWindowTitle(self.tr("Main Toolbar"))

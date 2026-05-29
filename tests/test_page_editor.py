@@ -4,7 +4,13 @@ from PyQt6.QtWidgets import QGraphicsDropShadowEffect, QScrollArea
 
 from minichord.document import CUSTOM_PAGE_SIZE, PageLayout, PageMargins
 from minichord.document.page import DEFAULT_SCREEN_DPI, mm_to_px
-from minichord.ui.page_editor import PageEditor, PageWidget
+from minichord.ui.page_editor import (
+    MAX_ZOOM,
+    MIN_ZOOM,
+    PAGE_CANVAS_MARGIN_PX,
+    PageEditor,
+    PageWidget,
+)
 
 
 def expected_editor_rect(layout: PageLayout, zoom: float = 1.0) -> QRect:
@@ -235,6 +241,39 @@ def test_page_editor_applies_zoom_to_every_page(qtbot):
             mm_to_px(140.0, DEFAULT_SCREEN_DPI, zoom=1.75),
         ),
     ]
+
+
+def test_page_editor_calculates_fit_zoom_values_from_viewport(qtbot):
+    editor = PageEditor()
+    qtbot.addWidget(editor)
+    layout = PageLayout(
+        page_size=CUSTOM_PAGE_SIZE,
+        custom_size_mm=(100.0, 160.0),
+    )
+    editor.set_page_layout(layout)
+    page_width, page_height = layout.page_size_px(DEFAULT_SCREEN_DPI)
+    viewport = QSize(
+        (page_width * 2) + (PAGE_CANVAS_MARGIN_PX * 2),
+        (page_height // 2) + (PAGE_CANVAS_MARGIN_PX * 2),
+    )
+
+    assert editor.fit_width_zoom(viewport) == 2.0
+    assert editor.fit_page_zoom(viewport) == pytest.approx(
+        (page_height // 2) / page_height
+    )
+
+
+def test_page_editor_fit_zoom_values_are_clamped(qtbot):
+    editor = PageEditor()
+    qtbot.addWidget(editor)
+    layout = PageLayout(
+        page_size=CUSTOM_PAGE_SIZE,
+        custom_size_mm=(100.0, 160.0),
+    )
+    editor.set_page_layout(layout)
+
+    assert editor.fit_width_zoom(QSize(1, 1)) == MIN_ZOOM
+    assert editor.fit_width_zoom(QSize(10000, 10000)) == MAX_ZOOM
 
 
 def test_page_editor_can_shrink_page_stack_without_losing_text(qtbot):

@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from PyQt6.QtCore import QByteArray, QSize
 from PyQt6.QtWidgets import QApplication
 
@@ -161,6 +162,69 @@ def test_main_window_exposes_theme_menu(qtbot, tmp_path):
     assert app.property(CURRENT_THEME_PROPERTY) == THEME_DARK
 
 
+def test_main_window_exposes_zoom_actions(qtbot, tmp_path):
+    window = MainWindow(settings=temporary_settings(tmp_path))
+    qtbot.addWidget(window)
+
+    assert window.zoom_menu.title() == "Zoom"
+    assert window.zoom_in_action.text() == "Zoom In"
+    assert window.zoom_out_action.text() == "Zoom Out"
+    assert window.reset_zoom_action.text() == "Actual Size"
+    assert window.fit_width_action.text() == "Fit Width"
+    assert window.fit_page_action.text() == "Fit Page"
+    assert not window.reset_zoom_action.isEnabled()
+
+    window.zoom_in_action.trigger()
+
+    assert window.editor.zoom() == pytest.approx(1.1)
+    assert window.reset_zoom_action.isEnabled()
+    assert window.statusBar().currentMessage() == "Zoom: 110%"
+
+    window.zoom_out_action.trigger()
+
+    assert window.editor.zoom() == pytest.approx(1.0)
+    assert not window.reset_zoom_action.isEnabled()
+
+
+def test_main_window_zoom_actions_sync_at_supported_limits(qtbot, tmp_path):
+    window = MainWindow(settings=temporary_settings(tmp_path))
+    qtbot.addWidget(window)
+
+    window.set_zoom(0.01)
+
+    assert window.editor.zoom() == 0.25
+    assert not window.zoom_out_action.isEnabled()
+    assert window.zoom_in_action.isEnabled()
+
+    window.set_zoom(10.0)
+
+    assert window.editor.zoom() == 4.0
+    assert window.zoom_out_action.isEnabled()
+    assert not window.zoom_in_action.isEnabled()
+
+
+def test_main_window_fit_actions_report_zoom(qtbot, monkeypatch, tmp_path):
+    window = MainWindow(settings=temporary_settings(tmp_path))
+    qtbot.addWidget(window)
+
+    def fake_fit_width():
+        window.editor.set_zoom(1.5)
+        return window.editor.zoom()
+
+    def fake_fit_page():
+        window.editor.set_zoom(0.75)
+        return window.editor.zoom()
+
+    monkeypatch.setattr(window.editor, "fit_width", fake_fit_width)
+    monkeypatch.setattr(window.editor, "fit_page", fake_fit_page)
+
+    window.fit_width_action.trigger()
+    assert window.statusBar().currentMessage() == "Zoom: 150%"
+
+    window.fit_page_action.trigger()
+    assert window.statusBar().currentMessage() == "Zoom: 75%"
+
+
 def test_main_window_exposes_preferences_action(qtbot, tmp_path):
     window = MainWindow(settings=temporary_settings(tmp_path))
     qtbot.addWidget(window)
@@ -222,6 +286,8 @@ def test_preferences_dialog_persists_selected_language(qtbot, monkeypatch, tmp_p
 
         assert reloaded.language() == "es"
         assert window.preferences_action.text() == "Preferencias..."
+        assert window.zoom_in_action.text() == "Acercar"
+        assert window.fit_width_action.text() == "Ajustar al ancho"
         assert window.statusBar().currentMessage() == "Idioma cambiado: Español"
     finally:
         if app is not None:

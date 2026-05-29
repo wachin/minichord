@@ -14,6 +14,8 @@ editor and worship songbook layout tool.
 - Page-based document/page model abstraction for future layout engine work
 - A4, Letter, Legal, portrait/landscape, and custom page geometry support
 - Dynamic page and writable-frame resizing when layout or zoom changes
+- View menu and toolbar zoom controls for zoom in/out, actual size, fit page,
+  and fit width
 - Physical page background, border, and shadow rendering
 - Multi-page vertical view with continuous scrolling and mixed orientations
 - Printer safe-area geometry with non-printable margin visualization
