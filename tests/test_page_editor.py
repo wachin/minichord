@@ -7,9 +7,12 @@ from minichord.document.page import DEFAULT_SCREEN_DPI, mm_to_px
 from minichord.ui.page_editor import (
     MAX_ZOOM,
     MIN_ZOOM,
+    MULTIPLE_PAGE_VIEW_COLUMNS,
     PAGE_CANVAS_MARGIN_PX,
+    PAGE_SPACING_PX,
     PageEditor,
     PageWidget,
+    SINGLE_PAGE_VIEW_COLUMNS,
 )
 
 
@@ -33,6 +36,13 @@ def expected_safe_area_rect(layout: PageLayout, zoom: float = 1.0) -> QRect:
         page_width - left - right,
         page_height - top - bottom,
     )
+
+
+def page_grid_position(editor: PageEditor, page_index: int) -> tuple[int, int]:
+    content_layout = editor.page_at(page_index).parentWidget().layout()
+    layout_index = content_layout.indexOf(editor.page_at(page_index))
+    row, column, _, _ = content_layout.getItemPosition(layout_index)
+    return row, column
 
 
 def test_page_widget_sizes_itself_from_page_layout(qtbot):
@@ -204,6 +214,35 @@ def test_page_editor_stacks_multiple_pages_in_continuous_scroll_view(qtbot):
         mm_to_px(120.0, DEFAULT_SCREEN_DPI),
         mm_to_px(90.0, DEFAULT_SCREEN_DPI),
     )
+    assert editor.pages_per_row() == SINGLE_PAGE_VIEW_COLUMNS
+    assert page_grid_position(editor, 0) == (0, 0)
+    assert page_grid_position(editor, 1) == (1, 0)
+
+
+def test_page_editor_can_show_multiple_pages_per_row(qtbot):
+    editor = PageEditor()
+    qtbot.addWidget(editor)
+    editor.set_page_count(3)
+
+    editor.set_multiple_page_view()
+
+    assert editor.pages_per_row() == MULTIPLE_PAGE_VIEW_COLUMNS
+    assert page_grid_position(editor, 0) == (0, 0)
+    assert page_grid_position(editor, 1) == (0, 1)
+    assert page_grid_position(editor, 2) == (1, 0)
+
+    editor.set_single_page_view()
+
+    assert editor.pages_per_row() == SINGLE_PAGE_VIEW_COLUMNS
+    assert page_grid_position(editor, 1) == (1, 0)
+
+
+def test_page_editor_rejects_invalid_pages_per_row(qtbot):
+    editor = PageEditor()
+    qtbot.addWidget(editor)
+
+    with pytest.raises(ValueError, match="Pages per row"):
+        editor.set_pages_per_row(0)
 
 
 def test_page_editor_set_page_layout_updates_all_visible_pages(qtbot):
@@ -274,6 +313,24 @@ def test_page_editor_fit_zoom_values_are_clamped(qtbot):
 
     assert editor.fit_width_zoom(QSize(1, 1)) == MIN_ZOOM
     assert editor.fit_width_zoom(QSize(10000, 10000)) == MAX_ZOOM
+
+
+def test_page_editor_fit_width_accounts_for_multiple_page_view(qtbot):
+    editor = PageEditor()
+    qtbot.addWidget(editor)
+    layout = PageLayout(
+        page_size=CUSTOM_PAGE_SIZE,
+        custom_size_mm=(100.0, 160.0),
+    )
+    editor.set_page_count(2, layout=layout)
+    editor.set_multiple_page_view()
+    page_width, _ = layout.page_size_px(DEFAULT_SCREEN_DPI)
+    viewport = QSize(
+        (page_width * 2) + PAGE_SPACING_PX + (PAGE_CANVAS_MARGIN_PX * 2),
+        10000,
+    )
+
+    assert editor.fit_width_zoom(viewport) == 1.0
 
 
 def test_page_editor_can_shrink_page_stack_without_losing_text(qtbot):

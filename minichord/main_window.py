@@ -30,7 +30,13 @@ from minichord.settings import (
     SettingsManager,
 )
 from minichord.theme import apply_theme
-from minichord.ui.page_editor import MAX_ZOOM, MIN_ZOOM, PageEditor
+from minichord.ui.page_editor import (
+    MAX_ZOOM,
+    MIN_ZOOM,
+    MULTIPLE_PAGE_VIEW_COLUMNS,
+    PageEditor,
+    SINGLE_PAGE_VIEW_COLUMNS,
+)
 from minichord.ui.preferences_dialog import PreferencesDialog
 from minichord.ui.recovery_dialog import RecoveryDialog
 
@@ -75,6 +81,7 @@ class MainWindow(QMainWindow):
         self._create_toolbar()
         self._sync_theme_actions()
         self._sync_zoom_actions()
+        self._sync_page_view_actions()
         self.settings.restore_main_window(self)
         self.statusBar().showMessage(self.tr("Ready"))
 
@@ -240,6 +247,21 @@ class MainWindow(QMainWindow):
         self._sync_zoom_actions()
         self._show_zoom_message()
 
+    def set_pages_per_row(self, pages_per_row: int) -> None:
+        self.editor.set_pages_per_row(pages_per_row)
+        self._sync_page_view_actions()
+        self.statusBar().showMessage(
+            self.tr("Page view: {view}").format(
+                view=self._page_view_label(pages_per_row)
+            )
+        )
+
+    def set_single_page_view(self) -> None:
+        self.set_pages_per_row(SINGLE_PAGE_VIEW_COLUMNS)
+
+    def set_multiple_page_view(self) -> None:
+        self.set_pages_per_row(MULTIPLE_PAGE_VIEW_COLUMNS)
+
     def perform_autosave(self, force: bool = False) -> Path | None:
         """Write a crash-recovery draft when the document has pending edits."""
         self._autosave_timer.stop()
@@ -348,6 +370,19 @@ class MainWindow(QMainWindow):
         self.fit_page_action = QAction(self.tr("Fit Page"), self)
         self.fit_page_action.triggered.connect(self.fit_page)
 
+        self.page_view_action_group = QActionGroup(self)
+        self.page_view_action_group.setExclusive(True)
+
+        self.single_page_view_action = QAction(self.tr("Single Page"), self)
+        self.single_page_view_action.setCheckable(True)
+        self.single_page_view_action.triggered.connect(self.set_single_page_view)
+        self.page_view_action_group.addAction(self.single_page_view_action)
+
+        self.multiple_page_view_action = QAction(self.tr("Multiple Pages"), self)
+        self.multiple_page_view_action.setCheckable(True)
+        self.multiple_page_view_action.triggered.connect(self.set_multiple_page_view)
+        self.page_view_action_group.addAction(self.multiple_page_view_action)
+
         self.about_action = QAction(self.tr("About miniChord"), self)
         self.about_action.triggered.connect(self.show_about_dialog)
 
@@ -382,6 +417,10 @@ class MainWindow(QMainWindow):
         self.edit_menu.addAction(self.preferences_action)
 
         self.view_menu = self.menuBar().addMenu(self.tr("View"))
+        self.page_view_menu = self.view_menu.addMenu(self.tr("Page View"))
+        self.page_view_menu.addAction(self.single_page_view_action)
+        self.page_view_menu.addAction(self.multiple_page_view_action)
+        self.view_menu.addSeparator()
         self.zoom_menu = self.view_menu.addMenu(self.tr("Zoom"))
         self.zoom_menu.addAction(self.zoom_in_action)
         self.zoom_menu.addAction(self.zoom_out_action)
@@ -437,6 +476,15 @@ class MainWindow(QMainWindow):
         self.zoom_in_action.setEnabled(current_zoom < MAX_ZOOM)
         self.reset_zoom_action.setEnabled(abs(current_zoom - DEFAULT_ZOOM) > 0.001)
 
+    def _sync_page_view_actions(self) -> None:
+        pages_per_row = self.editor.pages_per_row()
+        self.single_page_view_action.setChecked(
+            pages_per_row == SINGLE_PAGE_VIEW_COLUMNS
+        )
+        self.multiple_page_view_action.setChecked(
+            pages_per_row == MULTIPLE_PAGE_VIEW_COLUMNS
+        )
+
     def _show_zoom_message(self) -> None:
         self.statusBar().showMessage(
             self.tr("Zoom: {percent}%").format(percent=self._zoom_percent())
@@ -466,6 +514,16 @@ class MainWindow(QMainWindow):
         }
         return labels.get(language, language)
 
+    def _page_view_label(self, pages_per_row: int) -> str:
+        labels = {
+            SINGLE_PAGE_VIEW_COLUMNS: self.tr("Single Page"),
+            MULTIPLE_PAGE_VIEW_COLUMNS: self.tr("Multiple Pages"),
+        }
+        return labels.get(
+            pages_per_row,
+            self.tr("{count} pages per row").format(count=pages_per_row),
+        )
+
     def _retranslate_ui(self) -> None:
         self.new_action.setText(self.tr("New"))
         self.open_action.setText(self.tr("Open..."))
@@ -479,6 +537,8 @@ class MainWindow(QMainWindow):
         self.reset_zoom_action.setText(self.tr("Actual Size"))
         self.fit_width_action.setText(self.tr("Fit Width"))
         self.fit_page_action.setText(self.tr("Fit Page"))
+        self.single_page_view_action.setText(self.tr("Single Page"))
+        self.multiple_page_view_action.setText(self.tr("Multiple Pages"))
         self.about_action.setText(self.tr("About miniChord"))
         self.system_theme_action.setText(self.tr("System"))
         self.light_theme_action.setText(self.tr("Light"))
@@ -487,6 +547,7 @@ class MainWindow(QMainWindow):
         self.file_menu.setTitle(self.tr("File"))
         self.edit_menu.setTitle(self.tr("Edit"))
         self.view_menu.setTitle(self.tr("View"))
+        self.page_view_menu.setTitle(self.tr("Page View"))
         self.zoom_menu.setTitle(self.tr("Zoom"))
         self.theme_menu.setTitle(self.tr("Theme"))
         self.help_menu.setTitle(self.tr("Help"))

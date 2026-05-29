@@ -18,6 +18,7 @@ editor and worship songbook layout tool.
   and fit width
 - Physical page background, border, and shadow rendering
 - Multi-page vertical view with continuous scrolling and mixed orientations
+- Single-page and two-page view modes for scanning multiple pages side by side
 - Printer safe-area geometry with non-printable margin visualization
 - Page-geometry-derived row capacity for orientation-aware pagination
 - Internal semantic document DOM with song and paragraph blocks

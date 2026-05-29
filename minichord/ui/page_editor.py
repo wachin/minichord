@@ -8,6 +8,7 @@ from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QFrame,
+    QGridLayout,
     QGraphicsDropShadowEffect,
     QScrollArea,
     QTextEdit,
@@ -22,6 +23,8 @@ PAGE_CANVAS_MARGIN_PX = 24
 PAGE_SPACING_PX = 24
 MIN_ZOOM = 0.25
 MAX_ZOOM = 4.0
+SINGLE_PAGE_VIEW_COLUMNS = 1
+MULTIPLE_PAGE_VIEW_COLUMNS = 2
 
 
 class PageWidget(QFrame):
@@ -160,6 +163,7 @@ class PageEditor(QWidget):
         super().__init__(parent)
         self.setObjectName("pageEditor")
         self._pages: list[PageWidget] = []
+        self._pages_per_row = SINGLE_PAGE_VIEW_COLUMNS
 
         self._scroll_area = QScrollArea()
         self._scroll_area.setObjectName("pageScrollArea")
@@ -167,7 +171,7 @@ class PageEditor(QWidget):
 
         self._content = QWidget()
         self._content.setObjectName("pageCanvas")
-        self._content_layout = QVBoxLayout(self._content)
+        self._content_layout = QGridLayout(self._content)
         self._content_layout.setContentsMargins(
             PAGE_CANVAS_MARGIN_PX,
             PAGE_CANVAS_MARGIN_PX,
@@ -175,7 +179,6 @@ class PageEditor(QWidget):
             PAGE_CANVAS_MARGIN_PX,
         )
         self._content_layout.setSpacing(PAGE_SPACING_PX)
-        self._content_layout.addStretch(1)
         self._scroll_area.setWidget(self._content)
         self.page = self._append_page(PageLayout(), editable=True)
 
@@ -249,15 +252,30 @@ class PageEditor(QWidget):
         for page in self._pages:
             page.set_zoom(zoom)
 
+    def pages_per_row(self) -> int:
+        return self._pages_per_row
+
+    def set_pages_per_row(self, pages_per_row: int) -> None:
+        if pages_per_row < 1:
+            raise ValueError("Pages per row must be at least one.")
+        self._pages_per_row = pages_per_row
+        self._reflow_page_grid()
+
+    def set_single_page_view(self) -> None:
+        self.set_pages_per_row(SINGLE_PAGE_VIEW_COLUMNS)
+
+    def set_multiple_page_view(self) -> None:
+        self.set_pages_per_row(MULTIPLE_PAGE_VIEW_COLUMNS)
+
     def fit_width_zoom(self, viewport_size: QSize | None = None) -> float:
-        """Return the zoom needed to fit the first page width in the viewport."""
-        page_width, _ = self.page_layout().page_size_px(DEFAULT_SCREEN_DPI)
+        """Return the zoom needed to fit the widest visible page row."""
+        page_width, _ = self._unzoomed_view_size()
         available_width, _ = self._available_canvas_size(viewport_size)
         return clamped_zoom(available_width / page_width)
 
     def fit_page_zoom(self, viewport_size: QSize | None = None) -> float:
-        """Return the zoom needed to fit the first page entirely in the viewport."""
-        page_width, page_height = self.page_layout().page_size_px(DEFAULT_SCREEN_DPI)
+        """Return the zoom needed to fit the visible page row in the viewport."""
+        page_width, page_height = self._unzoomed_view_size()
         available_width, available_height = self._available_canvas_size(viewport_size)
         return clamped_zoom(
             min(available_width / page_width, available_height / page_height)
@@ -274,12 +292,7 @@ class PageEditor(QWidget):
     def _append_page(self, layout: PageLayout, editable: bool) -> PageWidget:
         page = PageWidget(layout=layout, editable=editable, parent=self._content)
         self._pages.append(page)
-        self._content_layout.insertWidget(
-            self._content_layout.count() - 1,
-            page,
-            0,
-            Qt.AlignmentFlag.AlignHCenter,
-        )
+        self._reflow_page_grid()
         return page
 
     def _remove_last_page(self) -> None:
@@ -287,6 +300,23 @@ class PageEditor(QWidget):
         self._content_layout.removeWidget(page)
         page.setParent(None)
         page.deleteLater()
+        self._reflow_page_grid()
+
+    def _reflow_page_grid(self) -> None:
+        for page in self._pages:
+            self._content_layout.removeWidget(page)
+
+        for page_index, page in enumerate(self._pages):
+            row = page_index // self._pages_per_row
+            column = page_index % self._pages_per_row
+            self._content_layout.addWidget(
+                page,
+                row,
+                column,
+                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+            )
+
+        self._content.updateGeometry()
 
     def _available_canvas_size(
         self,
@@ -298,6 +328,23 @@ class PageEditor(QWidget):
             max(1, size.width() - margins.left() - margins.right()),
             max(1, size.height() - margins.top() - margins.bottom()),
         )
+
+    def _unzoomed_view_size(self) -> tuple[int, int]:
+        row_widths: list[int] = []
+        row_heights: list[int] = []
+        for row_start in range(0, len(self._pages), self._pages_per_row):
+            row_pages = self._pages[row_start : row_start + self._pages_per_row]
+            page_sizes = [
+                page.page_layout().page_size_px(DEFAULT_SCREEN_DPI)
+                for page in row_pages
+            ]
+            row_widths.append(
+                sum(width for width, _ in page_sizes)
+                + (PAGE_SPACING_PX * max(0, len(page_sizes) - 1))
+            )
+            row_heights.append(max(height for _, height in page_sizes))
+
+        return max(row_widths), max(row_heights)
 
 
 def clamped_zoom(zoom: float) -> float:

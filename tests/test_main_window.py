@@ -166,6 +166,11 @@ def test_main_window_exposes_zoom_actions(qtbot, tmp_path):
     window = MainWindow(settings=temporary_settings(tmp_path))
     qtbot.addWidget(window)
 
+    assert window.page_view_menu.title() == "Page View"
+    assert window.single_page_view_action.text() == "Single Page"
+    assert window.multiple_page_view_action.text() == "Multiple Pages"
+    assert window.single_page_view_action.isChecked()
+    assert not window.multiple_page_view_action.isChecked()
     assert window.zoom_menu.title() == "Zoom"
     assert window.zoom_in_action.text() == "Zoom In"
     assert window.zoom_out_action.text() == "Zoom Out"
@@ -184,6 +189,24 @@ def test_main_window_exposes_zoom_actions(qtbot, tmp_path):
 
     assert window.editor.zoom() == pytest.approx(1.0)
     assert not window.reset_zoom_action.isEnabled()
+
+
+def test_main_window_switches_page_view_modes(qtbot, tmp_path):
+    window = MainWindow(settings=temporary_settings(tmp_path))
+    qtbot.addWidget(window)
+
+    window.multiple_page_view_action.trigger()
+
+    assert window.editor.pages_per_row() == 2
+    assert window.multiple_page_view_action.isChecked()
+    assert not window.single_page_view_action.isChecked()
+    assert window.statusBar().currentMessage() == "Page view: Multiple Pages"
+
+    window.single_page_view_action.trigger()
+
+    assert window.editor.pages_per_row() == 1
+    assert window.single_page_view_action.isChecked()
+    assert window.statusBar().currentMessage() == "Page view: Single Page"
 
 
 def test_main_window_zoom_actions_sync_at_supported_limits(qtbot, tmp_path):
@@ -288,6 +311,8 @@ def test_preferences_dialog_persists_selected_language(qtbot, monkeypatch, tmp_p
         assert window.preferences_action.text() == "Preferencias..."
         assert window.zoom_in_action.text() == "Acercar"
         assert window.fit_width_action.text() == "Ajustar al ancho"
+        assert window.page_view_menu.title() == "Vista de página"
+        assert window.multiple_page_view_action.text() == "Varias páginas"
         assert window.statusBar().currentMessage() == "Idioma cambiado: Español"
     finally:
         if app is not None:

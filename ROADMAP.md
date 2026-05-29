@@ -367,7 +367,7 @@ The engine MUST support:
 - [x] Zoom out
 - [x] Fit page
 - [x] Fit width
-- [ ] Multiple page view
+- [x] Multiple page view
 - [ ] Draft mode
 - [ ] Print layout mode
 
