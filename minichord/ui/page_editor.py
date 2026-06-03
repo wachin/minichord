@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from PyQt6.QtCore import QSize, Qt
-from PyQt6.QtGui import QColor, QTextDocument
+from PyQt6.QtGui import QColor, QTextCursor, QTextDocument
 from PyQt6.QtWidgets import (
     QFrame,
     QGridLayout,
@@ -321,7 +321,7 @@ class PageEditor(QWidget):
     def _append_page(self, layout: PageLayout, editable: bool) -> PageWidget:
         page = PageWidget(layout=layout, editable=editable, parent=self._content)
         page.editor.document().contentsChanged.connect(
-            self._handle_page_text_changed
+            lambda page=page: self._handle_page_text_changed(page)
         )
         self._pages.append(page)
         self._reflow_page_grid()
@@ -350,11 +350,13 @@ class PageEditor(QWidget):
 
         self._content.updateGeometry()
 
-    def _paginate_full_text(self) -> None:
+    def _paginate_full_text(self, cursor_position: int | None = None) -> None:
         page_chunks = self._page_text_chunks(self._full_text)
         page_layout = self.page_layout()
         self.set_page_layouts(tuple(page_layout for _ in page_chunks))
         self._set_page_texts(page_chunks)
+        if cursor_position is not None:
+            self._restore_cursor(cursor_position)
 
     def _set_page_texts(self, page_texts: Sequence[str]) -> None:
         self._setting_page_text = True
@@ -369,11 +371,40 @@ class PageEditor(QWidget):
         finally:
             self._setting_page_text = False
 
-    def _handle_page_text_changed(self) -> None:
+    def _handle_page_text_changed(self, changed_page: PageWidget) -> None:
         if self._setting_page_text:
             return
+        cursor_position = self._global_cursor_position(changed_page)
         self._full_text = "".join(page.text() for page in self._pages)
-        self._paginate_full_text()
+        self._paginate_full_text(cursor_position)
+
+    def _global_cursor_position(self, cursor_page: PageWidget) -> int:
+        cursor_position = 0
+        for page in self._pages:
+            if page is cursor_page:
+                return cursor_position + page.editor.textCursor().position()
+            cursor_position += len(page.text())
+        return cursor_position
+
+    def _restore_cursor(self, cursor_position: int) -> None:
+        page_start = 0
+        for page in self._pages:
+            page_text_length = len(page.text())
+            page_end = page_start + page_text_length
+            if cursor_position <= page_end:
+                cursor = QTextCursor(page.editor.document())
+                cursor.setPosition(max(0, cursor_position - page_start))
+                page.editor.setTextCursor(cursor)
+                if page.is_editable():
+                    page.editor.setFocus()
+                return
+            page_start = page_end
+
+        if self._pages:
+            last_page = self._pages[-1]
+            cursor = QTextCursor(last_page.editor.document())
+            cursor.setPosition(len(last_page.text()))
+            last_page.editor.setTextCursor(cursor)
 
     def _page_text_chunks(self, text: str) -> tuple[str, ...]:
         if text == "":

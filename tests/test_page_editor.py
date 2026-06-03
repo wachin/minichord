@@ -315,6 +315,19 @@ def test_page_editor_reflows_pasted_text_into_new_pages(qtbot):
     )
 
 
+def test_page_editor_preserves_cursor_while_typing(qtbot):
+    editor = PageEditor()
+    qtbot.addWidget(editor)
+
+    for character in "hola":
+        cursor = editor.page.editor.textCursor()
+        cursor.insertText(character)
+
+    assert editor.text() == "hola"
+    assert editor.page.text() == "hola"
+    assert editor.page.editor.textCursor().position() == 4
+
+
 def test_page_editor_can_show_multiple_pages_per_row(qtbot):
     editor = PageEditor()
     qtbot.addWidget(editor)
