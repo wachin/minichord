@@ -11,6 +11,7 @@ from chordpages.ui.page_editor import (
     MIN_ZOOM,
     MULTIPLE_PAGE_VIEW_COLUMNS,
     PAGE_CANVAS_MARGIN_PX,
+    PAGE_GRID_START_COLUMN,
     PAGE_SPACING_PX,
     PageEditor,
     PageWidget,
@@ -279,8 +280,8 @@ def test_page_editor_stacks_multiple_pages_in_continuous_scroll_view(qtbot):
         mm_to_px(90.0, DEFAULT_SCREEN_DPI),
     )
     assert editor.pages_per_row() == MULTIPLE_PAGE_VIEW_COLUMNS
-    assert page_grid_position(editor, 0) == (0, 0)
-    assert page_grid_position(editor, 1) == (0, 1)
+    assert page_grid_position(editor, 0) == (0, PAGE_GRID_START_COLUMN)
+    assert page_grid_position(editor, 1) == (0, PAGE_GRID_START_COLUMN + 1)
 
 
 def test_page_editor_paginates_loaded_text_without_internal_page_scroll(qtbot):
@@ -408,14 +409,31 @@ def test_page_editor_can_show_multiple_pages_per_row(qtbot):
     editor.set_multiple_page_view()
 
     assert editor.pages_per_row() == MULTIPLE_PAGE_VIEW_COLUMNS
-    assert page_grid_position(editor, 0) == (0, 0)
-    assert page_grid_position(editor, 1) == (0, 1)
-    assert page_grid_position(editor, 2) == (0, 2)
+    assert page_grid_position(editor, 0) == (0, PAGE_GRID_START_COLUMN)
+    assert page_grid_position(editor, 1) == (0, PAGE_GRID_START_COLUMN + 1)
+    assert page_grid_position(editor, 2) == (0, PAGE_GRID_START_COLUMN + 2)
 
     editor.set_single_page_view()
 
     assert editor.pages_per_row() == SINGLE_PAGE_VIEW_COLUMNS
-    assert page_grid_position(editor, 1) == (1, 0)
+    assert page_grid_position(editor, 1) == (1, PAGE_GRID_START_COLUMN)
+
+
+def test_page_editor_keeps_page_columns_compact_and_centered(qtbot):
+    editor = PageEditor()
+    qtbot.addWidget(editor)
+    editor.set_page_count(3)
+
+    content_layout = editor.page_at(0).parentWidget().layout()
+
+    assert content_layout.spacing() == PAGE_SPACING_PX
+    assert content_layout.columnStretch(0) == 1
+    assert content_layout.columnStretch(PAGE_GRID_START_COLUMN) == 0
+    assert content_layout.columnStretch(PAGE_GRID_START_COLUMN + 1) == 0
+    assert content_layout.columnStretch(PAGE_GRID_START_COLUMN + 2) == 0
+    assert content_layout.columnStretch(
+        PAGE_GRID_START_COLUMN + MULTIPLE_PAGE_VIEW_COLUMNS
+    ) == 1
 
 
 def test_page_editor_rejects_invalid_pages_per_row(qtbot):

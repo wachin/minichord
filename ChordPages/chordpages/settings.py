@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from hashlib import sha1
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
@@ -22,6 +24,16 @@ DEFAULT_THEME = THEME_SYSTEM
 SUPPORTED_THEMES = (THEME_SYSTEM, THEME_LIGHT, THEME_DARK)
 
 
+@dataclass(frozen=True, slots=True)
+class DocumentViewSettings:
+    """Per-document visual editor preferences."""
+
+    zoom: float | None = None
+    font_family: str | None = None
+    font_size: float | None = None
+    pages_per_row: int | None = None
+
+
 class SettingsManager:
     """Small typed wrapper around Qt's persistent settings storage."""
 
@@ -34,6 +46,9 @@ class SettingsManager:
     THEME_KEY = "ui/theme"
     EDITOR_FONT_FAMILY_KEY = "editor/fontFamily"
     EDITOR_FONT_SIZE_KEY = "editor/fontSize"
+    EDITOR_ZOOM_KEY = "editor/zoom"
+    EDITOR_PAGES_PER_ROW_KEY = "editor/pagesPerRow"
+    FILE_VIEW_SETTINGS_PREFIX = "files/viewSettings"
 
     def __init__(self, qsettings: QSettings | None = None):
         self._settings = qsettings or QSettings(ORGANIZATION_NAME, APPLICATION_NAME)
@@ -202,6 +217,73 @@ class SettingsManager:
         """Persist the editor font size in points."""
         self._settings.setValue(self.EDITOR_FONT_SIZE_KEY, float(point_size))
 
+    def editor_zoom(self, default_zoom: float) -> float:
+        """Return the persisted default editor zoom factor."""
+        return _positive_float(self._settings.value(self.EDITOR_ZOOM_KEY), default_zoom)
+
+    def set_editor_zoom(self, zoom: float) -> None:
+        """Persist the default editor zoom factor."""
+        self._settings.setValue(self.EDITOR_ZOOM_KEY, float(zoom))
+
+    def editor_pages_per_row(self, default_pages_per_row: int) -> int:
+        """Return the persisted default page view column count."""
+        return _positive_int(
+            self._settings.value(self.EDITOR_PAGES_PER_ROW_KEY),
+            default_pages_per_row,
+        )
+
+    def set_editor_pages_per_row(self, pages_per_row: int) -> None:
+        """Persist the default page view column count."""
+        self._settings.setValue(self.EDITOR_PAGES_PER_ROW_KEY, int(pages_per_row))
+
+    def file_view_settings(self, path: str | Path) -> DocumentViewSettings:
+        """Return visual preferences saved for one document path."""
+        group = self._file_view_settings_group(path)
+        font_family = self._settings.value(f"{group}/fontFamily")
+        return DocumentViewSettings(
+            zoom=_optional_positive_float(self._settings.value(f"{group}/zoom")),
+            font_family=(
+                str(font_family).strip()
+                if font_family not in (None, "")
+                else None
+            ),
+            font_size=_optional_positive_float(self._settings.value(f"{group}/fontSize")),
+            pages_per_row=_optional_positive_int(
+                self._settings.value(f"{group}/pagesPerRow")
+            ),
+        )
+
+    def set_file_view_settings(
+        self,
+        path: str | Path,
+        view_settings: DocumentViewSettings,
+    ) -> None:
+        """Persist visual preferences for one document path."""
+        group = self._file_view_settings_group(path)
+        self._settings.setValue(f"{group}/path", _normalized_path(path))
+        if view_settings.zoom is not None:
+            self._settings.setValue(f"{group}/zoom", float(view_settings.zoom))
+        if view_settings.font_family is not None:
+            self._settings.setValue(
+                f"{group}/fontFamily",
+                view_settings.font_family.strip(),
+            )
+        if view_settings.font_size is not None:
+            self._settings.setValue(
+                f"{group}/fontSize",
+                float(view_settings.font_size),
+            )
+        if view_settings.pages_per_row is not None:
+            self._settings.setValue(
+                f"{group}/pagesPerRow",
+                int(view_settings.pages_per_row),
+            )
+
+    def _file_view_settings_group(self, path: str | Path) -> str:
+        path_text = _normalized_path(path)
+        path_hash = sha1(path_text.encode("utf-8")).hexdigest()
+        return f"{self.FILE_VIEW_SETTINGS_PREFIX}/{path_hash}"
+
     def _stored_window_size(self, default_size: tuple[int, int]) -> QSize:
         stored_size = self._settings.value(self.MAIN_WINDOW_SIZE_KEY)
         if isinstance(stored_size, QSize) and _is_usable_size(stored_size):
@@ -228,3 +310,33 @@ def _normalized_path(path: str | Path) -> str:
 
 def _is_usable_size(size: QSize) -> bool:
     return size.isValid() and size.width() > 0 and size.height() > 0
+
+
+def _positive_float(value: Any, default: float) -> float:
+    parsed_value = _optional_positive_float(value)
+    return default if parsed_value is None else parsed_value
+
+
+def _optional_positive_float(value: Any) -> float | None:
+    if value in (None, ""):
+        return None
+    try:
+        parsed_value = float(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed_value if parsed_value > 0 else None
+
+
+def _positive_int(value: Any, default: int) -> int:
+    parsed_value = _optional_positive_int(value)
+    return default if parsed_value is None else parsed_value
+
+
+def _optional_positive_int(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    try:
+        parsed_value = int(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed_value if parsed_value > 0 else None

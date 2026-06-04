@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from PyQt6.QtCore import PYQT_VERSION_STR, QT_VERSION_STR, QMarginsF, QSizeF, QTimer
+from PyQt6.QtCore import PYQT_VERSION_STR, QT_VERSION_STR, QMarginsF, QSizeF, Qt, QTimer
 from PyQt6.QtGui import (
     QAction,
     QActionGroup,
@@ -22,6 +22,7 @@ from PyQt6.QtWidgets import (
     QDoubleSpinBox,
     QFileDialog,
     QFontComboBox,
+    QLabel,
     QMainWindow,
     QMessageBox,
     QTabWidget,
@@ -45,6 +46,7 @@ from chordpages.resources import app_icon
 from chordpages.recovery import RecoveryDraft, RecoveryManager
 from chordpages.settings import (
     DEFAULT_LANGUAGE,
+    DocumentViewSettings,
     THEME_DARK,
     THEME_LIGHT,
     THEME_SYSTEM,
@@ -100,6 +102,10 @@ class MainWindow(QMainWindow):
         self._autosave_dirty = False
         self._autosave_suspended = False
         self._editor_font = self._load_editor_font()
+        self._default_zoom = self.settings.editor_zoom(DEFAULT_ZOOM)
+        self._default_pages_per_row = self.settings.editor_pages_per_row(
+            MULTIPLE_PAGE_VIEW_COLUMNS
+        )
         self.current_path: Path | None = None
         self.use_sharps = True
         self._apply_current_theme()
@@ -125,6 +131,7 @@ class MainWindow(QMainWindow):
         self._create_toolbar()
         self._sync_theme_actions()
         self._sync_zoom_actions()
+        self._sync_zoom_display()
         self._sync_page_view_actions()
         self._sync_font_controls()
         self.settings.restore_main_window(self)
@@ -148,6 +155,8 @@ class MainWindow(QMainWindow):
         file_info: TextFileInfo | None = None,
     ) -> PageEditor:
         editor = PageEditor(editor_font=self._editor_font)
+        editor.set_zoom(self._default_zoom)
+        editor.set_pages_per_row(self._default_pages_per_row)
         editor.textChanged.connect(lambda editor=editor: self._handle_editor_text_changed(editor))
         metadata = DocumentTab(
             editor=editor,
@@ -160,6 +169,8 @@ class MainWindow(QMainWindow):
             autosave_draft_id=AutosaveManager.new_draft_id(),
         )
         self._documents[editor] = metadata
+        if metadata.path is not None:
+            self._apply_file_view_settings(editor, metadata.path)
         self._set_tab_text_without_autosave(editor, text)
         tab_index = self.tabs.addTab(editor, self._tab_label(metadata))
         self.tabs.setCurrentIndex(tab_index)
@@ -176,9 +187,16 @@ class MainWindow(QMainWindow):
             metadata.file_type = DEFAULT_FILE_TYPE
             metadata.modified = False
             metadata.autosave_draft_id = AutosaveManager.new_draft_id()
+            editor.set_editor_font(self._editor_font)
+            editor.set_zoom(self._default_zoom)
+            editor.set_pages_per_row(self._default_pages_per_row)
             self._set_tab_text_without_autosave(editor, "")
             self.current_path = None
             self._refresh_tab_label(editor)
+            self._sync_zoom_actions()
+            self._sync_zoom_display()
+            self._sync_page_view_actions()
+            self._sync_font_controls()
             self._update_window_title()
             return
         editor = self.tabs.widget(index)
@@ -198,6 +216,8 @@ class MainWindow(QMainWindow):
         self._autosave_dirty = metadata.modified
         if hasattr(self, "zoom_in_action"):
             self._sync_zoom_actions()
+        if hasattr(self, "zoom_label"):
+            self._sync_zoom_display()
         if hasattr(self, "single_page_view_action"):
             self._sync_page_view_actions()
         if hasattr(self, "font_family_combo"):
@@ -366,6 +386,7 @@ class MainWindow(QMainWindow):
             metadata.encoding = file_info.encoding
             metadata.newline = file_info.newline
             metadata.file_type = file_info.file_type
+            self._apply_file_view_settings(editor, resolved_path)
             self._set_tab_text_without_autosave(editor, text)
         else:
             editor = self.add_document_tab(text=text, path=resolved_path, file_info=file_info)
@@ -374,6 +395,10 @@ class MainWindow(QMainWindow):
         self._refresh_tab_label(editor)
         self.current_path = metadata.path
         self.settings.remember_file(path)
+        self._sync_zoom_actions()
+        self._sync_zoom_display()
+        self._sync_page_view_actions()
+        self._sync_font_controls()
         self._update_window_title()
         self.statusBar().showMessage(
             self.tr("Opened: {path} ({type}, {encoding}, {newline})").format(
@@ -417,12 +442,14 @@ class MainWindow(QMainWindow):
         self.autosave_manager.clear(previous_path, previous_draft_id)
         metadata.path = path.resolve(strict=False)
         self.current_path = metadata.path
+        self._persist_file_view_settings(metadata)
         self.autosave_manager.clear(metadata.path, metadata.autosave_draft_id)
         metadata.modified = False
         self._refresh_tab_label(self.editor)
         self._autosave_dirty = False
         self._autosave_timer.stop()
         self.settings.remember_file(path)
+        self.settings.sync()
         self._update_window_title()
         self.statusBar().showMessage(
             self.tr("Saved: {path} ({type}, {encoding}, {newline})").format(
@@ -465,7 +492,12 @@ class MainWindow(QMainWindow):
 
     def set_zoom(self, zoom: float) -> None:
         self.editor.set_zoom(zoom)
+        self._default_zoom = self.editor.zoom()
+        self.settings.set_editor_zoom(self._default_zoom)
+        self._persist_current_file_view_settings()
+        self.settings.sync()
         self._sync_zoom_actions()
+        self._sync_zoom_display()
         self._show_zoom_message()
 
     def zoom_in(self) -> None:
@@ -478,28 +510,30 @@ class MainWindow(QMainWindow):
         self.set_zoom(DEFAULT_ZOOM)
 
     def set_editor_font_family(self, font: QFont) -> None:
+        current_font = self.editor.editor_font()
         self.set_editor_font(
             make_editor_font(
                 font.family(),
-                self._editor_font.pointSizeF(),
+                current_font.pointSizeF(),
             )
         )
 
     def set_editor_font_size(self, point_size: float) -> None:
+        current_font = self.editor.editor_font()
         self.set_editor_font(
             make_editor_font(
-                self._editor_font.family(),
+                current_font.family(),
                 point_size,
             )
         )
 
     def set_editor_font(self, font: QFont) -> None:
         self._editor_font = QFont(font)
-        for editor in self._documents:
-            editor.set_editor_font(self._editor_font)
+        self.editor.set_editor_font(self._editor_font)
 
         self.settings.set_editor_font_family(self._editor_font.family())
         self.settings.set_editor_font_size(self._editor_font.pointSizeF())
+        self._persist_current_file_view_settings()
         self.settings.sync()
         self._sync_font_controls()
         self.statusBar().showMessage(
@@ -511,12 +545,22 @@ class MainWindow(QMainWindow):
 
     def fit_width(self) -> None:
         self.editor.fit_width()
+        self._default_zoom = self.editor.zoom()
+        self.settings.set_editor_zoom(self._default_zoom)
+        self._persist_current_file_view_settings()
+        self.settings.sync()
         self._sync_zoom_actions()
+        self._sync_zoom_display()
         self._show_zoom_message()
 
     def fit_page(self) -> None:
         self.editor.fit_page()
+        self._default_zoom = self.editor.zoom()
+        self.settings.set_editor_zoom(self._default_zoom)
+        self._persist_current_file_view_settings()
+        self.settings.sync()
         self._sync_zoom_actions()
+        self._sync_zoom_display()
         self._show_zoom_message()
 
     def transpose_up(self) -> None:
@@ -546,6 +590,10 @@ class MainWindow(QMainWindow):
 
     def set_pages_per_row(self, pages_per_row: int) -> None:
         self.editor.set_pages_per_row(pages_per_row)
+        self._default_pages_per_row = self.editor.pages_per_row()
+        self.settings.set_editor_pages_per_row(self._default_pages_per_row)
+        self._persist_current_file_view_settings()
+        self.settings.sync()
         self._sync_page_view_actions()
         self.statusBar().showMessage(
             self.tr("Page view: {view}").format(
@@ -795,6 +843,12 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(self.zoom_out_action)
         self.toolbar.addAction(self.zoom_in_action)
         self.toolbar.addAction(self.fit_width_action)
+        self.zoom_label = QLabel(self.toolbar)
+        self.zoom_label.setObjectName("zoomLabel")
+        self.zoom_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.zoom_label.setMinimumWidth(48)
+        self.zoom_label.setToolTip(self.tr("Current zoom"))
+        self.toolbar.addWidget(self.zoom_label)
         self.toolbar.addSeparator()
         self.font_family_combo = QFontComboBox(self.toolbar)
         self.font_family_combo.setObjectName("fontFamilyComboBox")
@@ -842,6 +896,10 @@ class MainWindow(QMainWindow):
         self.zoom_in_action.setEnabled(current_zoom < MAX_ZOOM)
         self.reset_zoom_action.setEnabled(abs(current_zoom - DEFAULT_ZOOM) > 0.001)
 
+    def _sync_zoom_display(self) -> None:
+        if hasattr(self, "zoom_label"):
+            self.zoom_label.setText(f"{self._zoom_percent()}%")
+
     def _sync_page_view_actions(self) -> None:
         pages_per_row = self.editor.pages_per_row()
         self.single_page_view_action.setChecked(
@@ -858,8 +916,9 @@ class MainWindow(QMainWindow):
         font_signals_blocked = self.font_family_combo.blockSignals(True)
         size_signals_blocked = self.font_size_spin.blockSignals(True)
         try:
-            self.font_family_combo.setCurrentFont(self._editor_font)
-            self.font_size_spin.setValue(self._editor_font.pointSizeF())
+            current_font = self.editor.editor_font()
+            self.font_family_combo.setCurrentFont(current_font)
+            self.font_size_spin.setValue(current_font.pointSizeF())
         finally:
             self.font_family_combo.blockSignals(font_signals_blocked)
             self.font_size_spin.blockSignals(size_signals_blocked)
@@ -881,6 +940,52 @@ class MainWindow(QMainWindow):
             self.settings.editor_font_family(fallback_font.family()),
             self.settings.editor_font_size(fallback_font.pointSizeF()),
         )
+
+    def _view_settings_for_editor(self, editor: PageEditor) -> DocumentViewSettings:
+        editor_font = editor.editor_font()
+        return DocumentViewSettings(
+            zoom=editor.zoom(),
+            font_family=editor_font.family(),
+            font_size=editor_font.pointSizeF(),
+            pages_per_row=editor.pages_per_row(),
+        )
+
+    def _persist_current_file_view_settings(self) -> None:
+        self._persist_file_view_settings(self.current_document())
+
+    def _persist_file_view_settings(self, metadata: DocumentTab) -> None:
+        if metadata.path is None:
+            return
+        self.settings.set_file_view_settings(
+            metadata.path,
+            self._view_settings_for_editor(metadata.editor),
+        )
+
+    def _apply_file_view_settings(self, editor: PageEditor, path: Path) -> None:
+        view_settings = self.settings.file_view_settings(path)
+        self._apply_view_settings(editor, view_settings)
+
+    def _apply_view_settings(
+        self,
+        editor: PageEditor,
+        view_settings: DocumentViewSettings,
+    ) -> None:
+        if view_settings.font_family is not None or view_settings.font_size is not None:
+            current_font = editor.editor_font()
+            editor.set_editor_font(
+                make_editor_font(
+                    view_settings.font_family or current_font.family(),
+                    (
+                        view_settings.font_size
+                        if view_settings.font_size is not None
+                        else current_font.pointSizeF()
+                    ),
+                )
+            )
+        if view_settings.zoom is not None:
+            editor.set_zoom(view_settings.zoom)
+        if view_settings.pages_per_row is not None:
+            editor.set_pages_per_row(view_settings.pages_per_row)
 
     def _apply_current_theme(self) -> None:
         app = QApplication.instance()
@@ -942,8 +1047,10 @@ class MainWindow(QMainWindow):
         self.theme_menu.setTitle(self.tr("Theme"))
         self.help_menu.setTitle(self.tr("Help"))
         self.toolbar.setWindowTitle(self.tr("Main Toolbar"))
+        self.zoom_label.setToolTip(self.tr("Current zoom"))
         self.font_family_combo.setToolTip(self.tr("Font family"))
         self.font_size_spin.setToolTip(self.tr("Font size"))
+        self._sync_zoom_display()
 
         if self.current_path is None:
             self.setWindowTitle(self.tr("ChordPages - Untitled"))

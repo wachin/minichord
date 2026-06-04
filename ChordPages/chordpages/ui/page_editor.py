@@ -26,6 +26,7 @@ MIN_ZOOM = 0.25
 MAX_ZOOM = 4.0
 SINGLE_PAGE_VIEW_COLUMNS = 1
 MULTIPLE_PAGE_VIEW_COLUMNS = 3
+PAGE_GRID_START_COLUMN = 1
 
 
 class PageWidget(QFrame):
@@ -373,9 +374,11 @@ class PageEditor(QWidget):
         for page in self._pages:
             self._content_layout.removeWidget(page)
 
+        self._reset_grid_stretch()
+
         for page_index, page in enumerate(self._pages):
             row = page_index // self._pages_per_row
-            column = page_index % self._pages_per_row
+            column = PAGE_GRID_START_COLUMN + (page_index % self._pages_per_row)
             self._content_layout.addWidget(
                 page,
                 row,
@@ -383,7 +386,23 @@ class PageEditor(QWidget):
                 Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
             )
 
+        self._content_layout.setColumnStretch(0, 1)
+        self._content_layout.setColumnStretch(
+            PAGE_GRID_START_COLUMN + self._pages_per_row,
+            1,
+        )
+        row_count = max(
+            1,
+            (len(self._pages) + self._pages_per_row - 1) // self._pages_per_row,
+        )
+        self._content_layout.setRowStretch(row_count, 1)
         self._content.updateGeometry()
+
+    def _reset_grid_stretch(self) -> None:
+        for column in range(self._content_layout.columnCount() + 1):
+            self._content_layout.setColumnStretch(column, 0)
+        for row in range(self._content_layout.rowCount() + 1):
+            self._content_layout.setRowStretch(row, 0)
 
     def _paginate_full_text(self, cursor_position: int | None = None) -> None:
         page_chunks = self._page_text_chunks(self._full_text)

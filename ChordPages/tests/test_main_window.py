@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 from PyQt6.QtCore import QByteArray, QSize
-from PyQt6.QtWidgets import QApplication, QDoubleSpinBox, QFontComboBox
+from PyQt6.QtWidgets import QApplication, QDoubleSpinBox, QFontComboBox, QLabel
 
 from chordpages import __version__
 from chordpages.app import build_application
@@ -24,6 +24,7 @@ from chordpages.recovery import RecoveryManager
 from chordpages.resources import APP_ICON_PATH
 from chordpages.settings import (
     APPLICATION_NAME,
+    DocumentViewSettings,
     ORGANIZATION_NAME,
     THEME_DARK,
     THEME_LIGHT,
@@ -86,6 +87,42 @@ def test_settings_manager_persists_editor_font(tmp_path):
 
     assert reloaded.editor_font_family("fallback") == "DejaVu Sans Mono"
     assert reloaded.editor_font_size(6.5) == 7.5
+
+
+def test_settings_manager_persists_editor_view_defaults(tmp_path):
+    settings = temporary_settings(tmp_path)
+    settings.set_editor_zoom(1.35)
+    settings.set_editor_pages_per_row(1)
+    settings.sync()
+
+    reloaded = temporary_settings(tmp_path)
+
+    assert reloaded.editor_zoom(1.0) == pytest.approx(1.35)
+    assert reloaded.editor_pages_per_row(3) == 1
+
+
+def test_settings_manager_persists_file_view_settings(tmp_path):
+    settings = temporary_settings(tmp_path)
+    path = tmp_path / "song.txt"
+
+    settings.set_file_view_settings(
+        path,
+        DocumentViewSettings(
+            zoom=1.5,
+            font_family="DejaVu Sans Mono",
+            font_size=8.5,
+            pages_per_row=1,
+        ),
+    )
+    settings.sync()
+
+    reloaded = temporary_settings(tmp_path)
+    view_settings = reloaded.file_view_settings(path)
+
+    assert view_settings.zoom == pytest.approx(1.5)
+    assert view_settings.font_family == "DejaVu Sans Mono"
+    assert view_settings.font_size == pytest.approx(8.5)
+    assert view_settings.pages_per_row == 1
 
 
 def test_settings_manager_rejects_unknown_theme(tmp_path):
@@ -190,7 +227,8 @@ def test_main_window_exposes_theme_menu(qtbot, tmp_path):
 
 
 def test_main_window_exposes_zoom_actions(qtbot, tmp_path):
-    window = MainWindow(settings=temporary_settings(tmp_path))
+    settings = temporary_settings(tmp_path)
+    window = MainWindow(settings=settings)
     qtbot.addWidget(window)
 
     assert window.page_view_menu.title() == "Page View"
@@ -204,17 +242,24 @@ def test_main_window_exposes_zoom_actions(qtbot, tmp_path):
     assert window.reset_zoom_action.text() == "Actual Size"
     assert window.fit_width_action.text() == "Fit Width"
     assert window.fit_page_action.text() == "Fit Page"
+    assert isinstance(window.zoom_label, QLabel)
+    assert window.zoom_label.objectName() == "zoomLabel"
+    assert window.zoom_label.text() == "100%"
     assert not window.reset_zoom_action.isEnabled()
 
     window.zoom_in_action.trigger()
 
     assert window.editor.zoom() == pytest.approx(1.1)
+    assert settings.editor_zoom(1.0) == pytest.approx(1.1)
+    assert window.zoom_label.text() == "110%"
     assert window.reset_zoom_action.isEnabled()
     assert window.statusBar().currentMessage() == "Zoom: 110%"
 
     window.zoom_out_action.trigger()
 
     assert window.editor.zoom() == pytest.approx(1.0)
+    assert settings.editor_zoom(1.1) == pytest.approx(1.0)
+    assert window.zoom_label.text() == "100%"
     assert not window.reset_zoom_action.isEnabled()
 
 
@@ -246,17 +291,67 @@ def test_main_window_applies_saved_editor_font_to_new_tabs(qtbot, tmp_path):
     settings = temporary_settings(tmp_path)
     settings.set_editor_font_family("DejaVu Sans Mono")
     settings.set_editor_font_size(7.5)
+    settings.set_editor_zoom(1.25)
+    settings.set_editor_pages_per_row(1)
     settings.sync()
 
     window = MainWindow(settings=settings)
     qtbot.addWidget(window)
 
     assert window.editor.editor_font().pointSizeF() == pytest.approx(7.5)
+    assert window.editor.zoom() == pytest.approx(1.25)
+    assert window.editor.pages_per_row() == 1
+    assert window.zoom_label.text() == "125%"
 
     window.new_document()
 
     assert window.editor.editor_font().pointSizeF() == pytest.approx(7.5)
+    assert window.editor.zoom() == pytest.approx(1.25)
+    assert window.editor.pages_per_row() == 1
     assert window.font_size_spin.value() == pytest.approx(7.5)
+    assert window.zoom_label.text() == "125%"
+
+
+def test_main_window_restores_view_settings_per_file(qtbot, tmp_path):
+    settings = temporary_settings(tmp_path)
+    first_path = tmp_path / "first.txt"
+    second_path = tmp_path / "second.txt"
+    first_path.write_text("first song\n", encoding="utf-8")
+    second_path.write_text("second song\n", encoding="utf-8")
+
+    window = MainWindow(settings=settings)
+    qtbot.addWidget(window)
+
+    window.load_path(first_path)
+    window.set_zoom(1.5)
+    window.font_size_spin.setValue(8.5)
+    window.set_single_page_view()
+
+    window.load_path(second_path)
+    window.set_zoom(0.75)
+    window.font_size_spin.setValue(7.0)
+    window.set_multiple_page_view()
+
+    reopened = MainWindow(settings=settings)
+    qtbot.addWidget(reopened)
+
+    reopened.load_path(first_path)
+
+    assert reopened.editor.zoom() == pytest.approx(1.5)
+    assert reopened.zoom_label.text() == "150%"
+    assert reopened.editor.editor_font().pointSizeF() == pytest.approx(8.5)
+    assert reopened.font_size_spin.value() == pytest.approx(8.5)
+    assert reopened.editor.pages_per_row() == 1
+    assert reopened.single_page_view_action.isChecked()
+
+    reopened.load_path(second_path)
+
+    assert reopened.editor.zoom() == pytest.approx(0.75)
+    assert reopened.zoom_label.text() == "75%"
+    assert reopened.editor.editor_font().pointSizeF() == pytest.approx(7.0)
+    assert reopened.font_size_spin.value() == pytest.approx(7.0)
+    assert reopened.editor.pages_per_row() == 3
+    assert reopened.multiple_page_view_action.isChecked()
 
 
 def test_main_window_switches_page_view_modes(qtbot, tmp_path):
